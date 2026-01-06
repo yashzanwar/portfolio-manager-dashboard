@@ -66,3 +66,28 @@ export interface PortfolioStats {
   todayGainLoss: number
   todayGainLossPercentage: number
 }
+
+// Portfolio Management Types
+export interface Portfolio {
+  id: number
+  portfolioName: string
+  pan: string
+  description?: string
+  isPrimary: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreatePortfolioRequest {
+  portfolioName: string
+  pan: string
+  description?: string
+  isPrimary: boolean
+}
+
+export interface UpdatePortfolioRequest {
+  portfolioName: string
+  pan: string
+  description?: string
+  isPrimary: boolean
+}
