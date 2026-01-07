@@ -65,4 +65,10 @@ export class PortfolioAPI {
     const response = await apiClient.post(`/portfolios/${portfolioId}/import-cas`, casData)
     return response.data
   }
+
+  // Get transactions for a specific folio
+  static async getFolioTransactions(portfolioId: number, folioNumber: string): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`/portfolios/${portfolioId}/folios/${encodeURIComponent(folioNumber)}/transactions`)
+    return response.data
+  }
 }

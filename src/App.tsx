@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard'
 import Portfolios from './pages/Portfolios'
 import Holdings from './pages/Holdings'
 import ImportCAS from './pages/ImportCAS'
+import FolioTransactions from './pages/FolioTransactions'
+import Transactions from './pages/Transactions'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +65,8 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/portfolios" element={<Portfolios />} />
               <Route path="/holdings" element={<Holdings />} />
+              <Route path="/holdings/:portfolioId/folio/:folioNumber" element={<FolioTransactions />} />
+              <Route path="/transactions" element={<Transactions />} />
               <Route path="/import" element={<ImportCAS />} />
             </Route>
             

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Download, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react'
+import { Download, Search, Filter, ChevronDown, ChevronUp, MoreVertical, Eye, Plus, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/common/Card'
 import { Button, TableSkeleton, EmptyState } from '../components/common'
 import { PortfolioSelector } from '../components/portfolio/PortfolioSelector'
@@ -45,6 +46,7 @@ interface PortfolioSummary {
 
 export default function Holdings() {
   const { data: portfolios = [], isLoading: loadingPortfolios } = usePortfolios()
+  const navigate = useNavigate()
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null)
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(false)
@@ -54,6 +56,26 @@ export default function Holdings() {
   const [schemeTypeFilter, setSchemeTypeFilter] = useState<string>('All')
   const [amcFilter, setAmcFilter] = useState<string>('All')
   const [expandedFolio, setExpandedFolio] = useState<string | null>(null)
+  
+  // Actions menu
+  const [openActionsMenu, setOpenActionsMenu] = useState<string | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
+  
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openActionsMenu) {
+        const target = event.target as HTMLElement
+        if (!target.closest('.actions-menu-container')) {
+          setOpenActionsMenu(null)
+          setMenuPosition(null)
+        }
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [openActionsMenu])
   
   // Sorting
   const [sortBy, setSortBy] = useState<'scheme' | 'invested' | 'current' | 'pl' | 'returns'>('current')
@@ -468,7 +490,7 @@ export default function Holdings() {
                         <td colSpan={9} className="px-6 py-4 bg-gray-50 dark:bg-gray-800">
                           <div className="space-y-4">
                             <h4 className="font-semibold text-gray-900 dark:text-white">Folio Details</h4>
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto overflow-y-visible">
                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-100 dark:bg-gray-700">
                                   <tr>
@@ -482,6 +504,7 @@ export default function Holdings() {
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Unrealized P&L</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Total P&L</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Returns %</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
@@ -504,6 +527,23 @@ export default function Holdings() {
                                       </td>
                                       <td className={`px-4 py-2 text-sm text-right font-mono font-medium ${folio.unrealizedProfitLossPercentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                         {formatPercentage(folio.unrealizedProfitLossPercentage)}
+                                      </td>
+                                      <td className="px-4 py-2 text-center">
+                                        <div className="relative inline-block text-left actions-menu-container">
+                                          <button
+                                            onClick={(e) => {
+                                              const rect = e.currentTarget.getBoundingClientRect()
+                                              setMenuPosition({
+                                                top: rect.bottom + window.scrollY,
+                                                left: rect.right - 192 + window.scrollX // 192px is menu width (w-48)
+                                              })
+                                              setOpenActionsMenu(openActionsMenu === folio.folioNumber ? null : folio.folioNumber)
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                          >
+                                            <MoreVertical className="w-5 h-5" />
+                                          </button>
+                                        </div>
                                       </td>
                                     </tr>
                                   ))}
@@ -545,6 +585,61 @@ export default function Holdings() {
             </div>
           </div>
         </Card>
+      )}
+      
+      {/* Actions Menu - Rendered with fixed positioning to avoid overflow issues */}
+      {openActionsMenu && menuPosition && (
+        <div
+          className="fixed z-50 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 actions-menu-container"
+          style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+        >
+          <div className="py-1">
+            <button
+              type="button"
+              onClick={() => {
+                const folio = filteredAndSortedHoldings
+                  .flatMap((f: any) => f.folios)
+                  .find((fol: any) => fol.folioNumber === openActionsMenu)
+                const fund = filteredAndSortedHoldings.find((f: any) =>
+                  f.folios.some((fol: any) => fol.folioNumber === openActionsMenu)
+                )
+                if (folio && fund) {
+                  navigate(`/holdings/${selectedPortfolio?.id}/folio/${encodeURIComponent(folio.folioNumber)}?scheme=${encodeURIComponent(fund.schemeName)}`)
+                }
+                setOpenActionsMenu(null)
+                setMenuPosition(null)
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+            >
+              <Eye className="w-4 h-4 mr-3" />
+              View Transactions
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                toast.info('Add transaction feature coming soon')
+                setOpenActionsMenu(null)
+                setMenuPosition(null)
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-3" />
+              Add Transaction
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                toast.info('Delete transaction feature coming soon')
+                setOpenActionsMenu(null)
+                setMenuPosition(null)
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4 mr-3" />
+              Delete Transaction
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
