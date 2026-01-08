@@ -66,9 +66,29 @@ export class PortfolioAPI {
     return response.data
   }
 
+  static async parsePDF(file: File, password?: string): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (password) {
+      formData.append('password', password)
+    }
+    
+    console.log('Sending PDF parse request:', { fileName: file.name, hasPassword: !!password })
+    
+    const { data } = await apiClient.post('/cas/parse', formData)
+    
+    console.log('Parse response:', data)
+    
+    // Extract the data field from the parse response
+    return data.data
+  }
+
   // Get transactions for a specific folio
-  static async getFolioTransactions(portfolioId: number, folioNumber: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(`/portfolios/${portfolioId}/folios/${encodeURIComponent(folioNumber)}/transactions`)
+  static async getFolioTransactions(portfolioId: number, folioNumber: string, isin?: string): Promise<any[]> {
+    const url = `/portfolios/${portfolioId}/folios/${encodeURIComponent(folioNumber)}/transactions${
+      isin ? `?isin=${encodeURIComponent(isin)}` : ''
+    }`
+    const response = await apiClient.get<any[]>(url)
     return response.data
   }
 }

@@ -34,11 +34,12 @@ export default function ImportCAS() {
   
   const [step, setStep] = useState<Step>('select-portfolio')
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null)
-  const [uploadMethod, setUploadMethod] = useState<'file' | 'paste'>('file')
   const [casData, setCasData] = useState<CASData | null>(null)
-  const [jsonText, setJsonText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [pdfPassword, setPdfPassword] = useState('')
+  const [uploadedFileName, setUploadedFileName] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   // Auto-select primary or first portfolio
   useEffect(() => {
@@ -48,37 +49,73 @@ export default function ImportCAS() {
     }
   }, [portfolios, selectedPortfolio])
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.json')) {
-      toast.error('Please upload a JSON file')
+    if (!file.name.endsWith('.pdf')) {
+      toast.error('Please upload a PDF file')
+      event.target.value = '' // Reset input
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string)
-        setCasData(data)
-        setStep('preview')
-      } catch (err) {
-        toast.error('Invalid JSON file format')
-      }
-    }
-    reader.readAsText(file)
+    setSelectedFile(file)
+    setUploadedFileName(file.name)
   }
 
-  const handlePasteJson = () => {
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.pdf')) {
+      toast.error('Please upload a PDF file')
+      return
+    }
+
+    setSelectedFile(file)
+    setUploadedFileName(file.name)
+  }
+
+  const handleParseFile = async () => {
+    if (!selectedFile) return
+
+    setIsUploading(true)
+    
     try {
-      const data = JSON.parse(jsonText)
+      // Parse PDF using backend API
+      toast.loading('Parsing CAS PDF...', { id: 'pdf-parse' })
+      const data = await PortfolioAPI.parsePDF(selectedFile, pdfPassword || undefined)
+      toast.success('PDF parsed successfully', { id: 'pdf-parse' })
       setCasData(data)
       setStep('preview')
-    } catch (err) {
-      toast.error('Invalid JSON format. Please check your input.')
+    } catch (err: any) {
+      console.error('File upload error:', err)
+      // Extract error message from various possible locations
+      const errorMessage = 
+        err.response?.data?.error ||           // Java ErrorResponse format
+        err.response?.data?.message || 
+        err.response?.data?.detail ||          // FastAPI format
+        err.message || 
+        'Failed to parse PDF'
+      toast.error(errorMessage, { id: 'pdf-parse' })
+      setSelectedFile(null)
+      setUploadedFileName('')
+      // Reset file input
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+    } finally {
+      setIsUploading(false)
     }
   }
+
 
   const handleImport = async () => {
     if (!selectedPortfolio || !casData) return
@@ -284,74 +321,100 @@ export default function ImportCAS() {
           {step === 'upload-data' && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Upload CAS Data
+                Upload CAS PDF
               </h2>
               
-              {/* Method Tabs */}
-              <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setUploadMethod('file')}
-                  className={`px-4 py-2 font-medium transition-colors ${
-                    uploadMethod === 'file'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Upload File
-                </button>
-                <button
-                  onClick={() => setUploadMethod('paste')}
-                  className={`px-4 py-2 font-medium transition-colors ${
-                    uploadMethod === 'paste'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Paste JSON
-                </button>
-              </div>
-
-              {/* File Upload */}
-              {uploadMethod === 'file' && (
-                <div className="mb-8">
-                  <label
-                    htmlFor="file-upload"
-                    className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-                      <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        JSON files only
-                      </p>
-                    </div>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".json"
-                      onChange={handleFileUpload}
-                    />
+              <div className="mb-8 space-y-4">
+                {/* Password Input */}
+                <div>
+                  <label htmlFor="pdf-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    PDF Password (Optional)
                   </label>
-                </div>
-              )}
-
-              {/* JSON Paste */}
-              {uploadMethod === 'paste' && (
-                <div className="mb-8">
-                  <textarea
-                    value={jsonText}
-                    onChange={(e) => setJsonText(e.target.value)}
-                    placeholder="Paste your CAS JSON data here..."
-                    className="w-full h-64 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  <input
+                    id="pdf-password"
+                    type="password"
+                    value={pdfPassword}
+                    onChange={(e) => setPdfPassword(e.target.value)}
+                    placeholder="Enter password if PDF is protected"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    Paste the complete JSON content from your CAS file
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Usually your date of birth in DDMMYYYY format (e.g., 01011990)
                   </p>
                 </div>
-              )}
+
+                {/* File Upload Area */}
+                <label
+                  htmlFor="file-upload"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+                    <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      PDF files only
+                    </p>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".pdf"
+                      onChange={handleFileSelect}
+                      disabled={isUploading || selectedFile !== null}
+                    />
+                  </label>
+
+                  {/* Selected File Preview */}
+                  {selectedFile && (
+                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <FileJson className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            File selected: {uploadedFileName}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            Click "Upload & Parse" to send the file to server for processing
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedFile(null)
+                            setUploadedFileName('')
+                            const fileInput = document.getElementById('file-upload') as HTMLInputElement
+                            if (fileInput) fileInput.value = ''
+                          }}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                          <AlertCircle className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <Button
+                        variant="primary"
+                        onClick={handleParseFile}
+                        disabled={isUploading}
+                        className="mt-3 w-full"
+                      >
+                        {isUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Uploading & Parsing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 mr-2" />
+                            Upload & Parse File
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+              </div>
 
               <div className="flex justify-between">
                 <Button
@@ -361,16 +424,6 @@ export default function ImportCAS() {
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
                 </Button>
-                {uploadMethod === 'paste' && (
-                  <Button
-                    variant="primary"
-                    onClick={handlePasteJson}
-                    disabled={!jsonText.trim()}
-                  >
-                    Validate & Continue
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                )}
               </div>
             </div>
           )}
@@ -381,6 +434,26 @@ export default function ImportCAS() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Review & Confirm
               </h2>
+              
+              {/* Uploaded File Info */}
+              {uploadedFileName && (
+                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FileJson className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        File parsed successfully
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {uploadedFileName}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                        ✓ Ready to import. Review the data below and click "Confirm & Import" to save to server.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="space-y-4 mb-8">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
@@ -437,10 +510,14 @@ export default function ImportCAS() {
               <div className="flex justify-between">
                 <Button
                   variant="secondary"
-                  onClick={() => setStep('upload-data')}
+                  onClick={() => {
+                    setStep('upload-data')
+                    setCasData(null)
+                    setUploadedFileName('')
+                  }}
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back
+                  Cancel
                 </Button>
                 <Button
                   variant="primary"
@@ -454,7 +531,7 @@ export default function ImportCAS() {
                     </>
                   ) : (
                     <>
-                      Import Data
+                      Confirm & Import to Server
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </>
                   )}

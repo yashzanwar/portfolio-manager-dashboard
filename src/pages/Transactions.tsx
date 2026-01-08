@@ -58,7 +58,8 @@ export default function Transactions() {
             try {
               const folioTransactions = await PortfolioAPI.getFolioTransactions(
                 selectedPortfolio.id,
-                folio.folio_number || folio.folioNumber
+                folio.folio_number || folio.folioNumber,
+                fund.isin // Pass ISIN to filter by scheme
               )
               
               // Add scheme and folio info to each transaction
