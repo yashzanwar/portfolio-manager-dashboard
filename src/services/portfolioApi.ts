@@ -91,4 +91,34 @@ export class PortfolioAPI {
     const response = await apiClient.get<any[]>(url)
     return response.data
   }
+
+  // Get portfolio value at a specific date
+  static async getPortfolioValue(portfolioId: number, date: string): Promise<{ portfolioId: number; date: string; totalValue: number }> {
+    const response = await apiClient.get<{ portfolioId: number; date: string; totalValue: number }>(
+      `/portfolio-value/${portfolioId}?date=${date}`
+    )
+    return response.data
+  }
+
+  // Get portfolio value history (time series)
+  static async getPortfolioValueHistory(
+    portfolioId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<{ portfolioId: number; startDate: string; endDate: string; dataPoints: Array<{ date: string; value: number }> }> {
+    const response = await apiClient.get(
+      `/portfolio-value/${portfolioId}/history?startDate=${startDate}&endDate=${endDate}`
+    )
+    return response.data
+  }
+
+  // Get complete portfolio value history (all time)
+  static async getCompletePortfolioHistory(
+    portfolioId: number
+  ): Promise<{ portfolioId: number; dataPoints: Array<{ date: string; value: number }> }> {
+    const response = await apiClient.get(
+      `/portfolio-value/${portfolioId}/complete-history`
+    )
+    return response.data
+  }
 }

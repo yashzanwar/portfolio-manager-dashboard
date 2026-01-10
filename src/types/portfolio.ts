@@ -6,6 +6,8 @@ export interface PortfolioOverview {
   unrealized_profit_loss: number
   total_profit_loss: number
   unrealized_profit_loss_percentage: number
+  one_day_change?: number
+  one_day_change_percentage?: number
 }
 
 export interface FolioData {

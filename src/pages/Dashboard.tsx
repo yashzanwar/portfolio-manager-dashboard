@@ -5,6 +5,7 @@ import { StatCard } from '../components/StatCard'
 import { PortfolioSelector } from '../components/portfolio/PortfolioSelector'
 import { HoldingsTable } from '../components/dashboard/HoldingsTable'
 import { AllocationChart } from '../components/dashboard/AllocationChart'
+import { PortfolioChart } from '../components/dashboard/PortfolioChart'
 import { Button, StatCardSkeleton, TableSkeleton, ChartSkeleton, EmptyState } from '../components/common'
 import { usePortfolios } from '../hooks/usePortfolios'
 import { PortfolioAPI } from '../services/portfolioApi'
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [oneDayChange, setOneDayChange] = useState<{ amount: number; percentage: number } | null>(null)
 
   // Debug logging
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function Dashboard() {
       try {
         setLoading(true)
         setError(null)
+        setOneDayChange(null) // Reset one-day change when fetching new portfolio
         const data = await PortfolioAPI.getComprehensiveSummary(selectedPortfolio.id)
         
         // Transform snake_case to camelCase
@@ -94,6 +97,46 @@ export default function Dashboard() {
         }
         
         setSummary(transformedData)
+
+        // Calculate one-day change
+        try {
+          // Get today's date
+          const today = new Date()
+          const todayStr = today.toISOString().split('T')[0]
+          
+          // Get 2 days ago
+          const twoDaysAgo = new Date()
+          twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+          const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0]
+          
+          console.log('Fetching portfolio values for one-day change calculation...')
+          console.log('Today:', todayStr)
+          console.log('Two days ago:', twoDaysAgoStr)
+          
+          // Fetch both today's and two days ago values from the portfolio-value API
+          const [todayData, previousData] = await Promise.all([
+            PortfolioAPI.getPortfolioValue(selectedPortfolio.id, todayStr),
+            PortfolioAPI.getPortfolioValue(selectedPortfolio.id, twoDaysAgoStr)
+          ])
+          
+          console.log('Today value:', todayData.totalValue)
+          console.log('Two days ago value:', previousData.totalValue)
+          
+          const currentValue = todayData.totalValue
+          const previousValue = previousData.totalValue
+          const change = currentValue - previousValue
+          const changePercentage = previousValue > 0 ? (change / previousValue) * 100 : 0
+          
+          console.log('One-day change:', change, '(' + changePercentage.toFixed(2) + '%)')
+          
+          setOneDayChange({
+            amount: change,
+            percentage: changePercentage
+          })
+        } catch (dayChangeErr) {
+          console.warn('Could not calculate one-day change:', dayChangeErr)
+          setOneDayChange(null)
+        }
       } catch (err: any) {
         console.error('Error fetching summary:', err)
         setError(err.response?.data?.message || 'Failed to load portfolio summary')
@@ -255,6 +298,23 @@ export default function Dashboard() {
               iconColor="text-green-600 dark:text-green-400"
             />
             <StatCard
+              title="One Day Change"
+              value={oneDayChange ? formatCurrency(oneDayChange.amount) : 'Calculating...'}
+              change={oneDayChange?.percentage}
+              icon={!oneDayChange || oneDayChange.amount >= 0 ? 
+                <TrendingUp className="w-6 h-6" /> : 
+                <TrendingDown className="w-6 h-6" />
+              }
+              iconBgColor={!oneDayChange || oneDayChange.amount >= 0 ? 
+                "bg-green-100 dark:bg-green-900/20" : 
+                "bg-red-100 dark:bg-red-900/20"
+              }
+              iconColor={!oneDayChange || oneDayChange.amount >= 0 ? 
+                "text-green-600 dark:text-green-400" : 
+                "text-red-600 dark:text-red-400"
+              }
+            />
+            <StatCard
               title="Total P&L"
               value={formatCurrency(summary.portfolioOverview.totalProfitLoss)}
               change={summary.portfolioOverview.totalProfitLossPercentage}
@@ -267,19 +327,6 @@ export default function Dashboard() {
                 "bg-red-100 dark:bg-red-900/20"
               }
               iconColor={summary.portfolioOverview.totalProfitLoss >= 0 ? 
-                "text-green-600 dark:text-green-400" : 
-                "text-red-600 dark:text-red-400"
-              }
-            />
-            <StatCard
-              title="Total Returns"
-              value={formatPercentage(summary.portfolioOverview.totalProfitLossPercentage)}
-              icon={<Target className="w-6 h-6" />}
-              iconBgColor={summary.portfolioOverview.totalProfitLossPercentage >= 0 ? 
-                "bg-green-100 dark:bg-green-900/20" : 
-                "bg-red-100 dark:bg-red-900/20"
-              }
-              iconColor={summary.portfolioOverview.totalProfitLossPercentage >= 0 ? 
                 "text-green-600 dark:text-green-400" : 
                 "text-red-600 dark:text-red-400"
               }
@@ -299,6 +346,11 @@ export default function Dashboard() {
             />
           ) : (
             <>
+              {/* Portfolio Performance Chart */}
+              <div className="mb-8">
+                <PortfolioChart portfolioId={selectedPortfolio.id} />
+              </div>
+
               {/* Chart and Holdings */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div className="lg:col-span-1">
