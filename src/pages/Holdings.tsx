@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/common/Card'
 import { Button, TableSkeleton, EmptyState } from '../components/common'
 import { PortfolioSelector } from '../components/portfolio/PortfolioSelector'
+import { AddTransactionModal } from '../components/portfolio/AddTransactionModal'
 import { usePortfolios } from '../hooks/usePortfolios'
 import { Portfolio } from '../types/portfolio'
 import { PortfolioAPI } from '../services/portfolioApi'
@@ -61,6 +62,9 @@ export default function Holdings() {
   const [openActionsMenu, setOpenActionsMenu] = useState<string | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
   
+  // Add Transaction Modal
+  const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
+  
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,61 +94,61 @@ export default function Holdings() {
   }, [portfolios, selectedPortfolio])
 
   // Fetch portfolio summary
-  useEffect(() => {
+  const fetchSummary = async () => {
     if (!selectedPortfolio) return
 
-    const fetchSummary = async () => {
-      setLoading(true)
-      try {
-        const data = await PortfolioAPI.getPortfolioSummary(selectedPortfolio.id)
-        
-        // Transform snake_case from backend to camelCase for frontend
-        const transformedData = {
-          investorName: data.investor_name || data.investorName || 'No Data',
-          portfolioOverview: {
-            totalInvested: data.portfolio_overview?.total_invested ?? data.portfolioOverview?.totalInvested ?? 0,
-            currentValue: data.portfolio_overview?.current_value ?? data.portfolioOverview?.currentValue ?? 0,
-            totalProfitLoss: data.portfolio_overview?.total_profit_loss ?? data.portfolioOverview?.totalProfitLoss ?? 0,
-            totalProfitLossPercentage: data.portfolio_overview?.unrealized_profit_loss_percentage ?? data.portfolioOverview?.totalProfitLossPercentage ?? 0,
-          },
-          funds: (data.funds || []).map((fund: any) => ({
-            isin: fund.isin,
-            schemeName: fund.scheme_name || fund.schemeName,
-            amc: fund.amc,
-            schemeType: fund.scheme_type || fund.schemeType,
-            folios: (fund.folios || []).map((folio: any) => {
-              // Handle both snake_case (from backend) and camelCase (from cached data)
-              const currentUnits = Number(folio.current_units ?? folio.currentUnits ?? 0)
-              const totalInvested = Number(folio.total_invested ?? folio.totalInvested ?? 0)
-              const currentValue = Number(folio.current_value ?? folio.currentValue ?? 0)
-              
-              return {
-                folioNumber: folio.folio_number || folio.folioNumber,
-                totalInvested: totalInvested,
-                currentValue: currentValue,
-                realizedProfitLoss: Number(folio.realized_profit_loss ?? folio.realizedProfitLoss ?? 0),
-                unrealizedProfitLoss: Number(folio.unrealized_profit_loss ?? folio.unrealizedProfitLoss ?? 0),
-                totalProfitLoss: Number(folio.total_profit_loss ?? folio.totalProfitLoss ?? 0),
-                unrealizedProfitLossPercentage: Number(folio.unrealized_profit_loss_percentage ?? folio.unrealizedProfitLossPercentage ?? 0),
-                totalUnitsPurchased: Number(folio.total_units_purchased ?? folio.totalUnitsPurchased ?? 0),
-                totalUnitsSold: Number(folio.total_units_sold ?? folio.totalUnitsSold ?? 0),
-                currentUnits: currentUnits,
-                averageBuyPrice: currentUnits > 0 ? totalInvested / currentUnits : 0,
-                currentNav: currentUnits > 0 ? currentValue / currentUnits : 0,
-              }
-            })
-          }))
-        }
-        
-        setSummary(transformedData)
-      } catch (err: any) {
-        console.error('Error fetching holdings:', err)
-        toast.error('Failed to load holdings data')
-      } finally {
-        setLoading(false)
+    setLoading(true)
+    try {
+      const data = await PortfolioAPI.getPortfolioSummary(selectedPortfolio.id)
+      
+      // Transform snake_case from backend to camelCase for frontend
+      const transformedData = {
+        investorName: data.investor_name || data.investorName || 'No Data',
+        portfolioOverview: {
+          totalInvested: data.portfolio_overview?.total_invested ?? data.portfolioOverview?.totalInvested ?? 0,
+          currentValue: data.portfolio_overview?.current_value ?? data.portfolioOverview?.currentValue ?? 0,
+          totalProfitLoss: data.portfolio_overview?.total_profit_loss ?? data.portfolioOverview?.totalProfitLoss ?? 0,
+          totalProfitLossPercentage: data.portfolio_overview?.unrealized_profit_loss_percentage ?? data.portfolioOverview?.totalProfitLossPercentage ?? 0,
+        },
+        funds: (data.funds || []).map((fund: any) => ({
+          isin: fund.isin,
+          schemeName: fund.scheme_name || fund.schemeName,
+          amc: fund.amc,
+          schemeType: fund.scheme_type || fund.schemeType,
+          folios: (fund.folios || []).map((folio: any) => {
+            // Handle both snake_case (from backend) and camelCase (from cached data)
+            const currentUnits = Number(folio.current_units ?? folio.currentUnits ?? 0)
+            const totalInvested = Number(folio.total_invested ?? folio.totalInvested ?? 0)
+            const currentValue = Number(folio.current_value ?? folio.currentValue ?? 0)
+            
+            return {
+              folioNumber: folio.folio_number || folio.folioNumber,
+              totalInvested: totalInvested,
+              currentValue: currentValue,
+              realizedProfitLoss: Number(folio.realized_profit_loss ?? folio.realizedProfitLoss ?? 0),
+              unrealizedProfitLoss: Number(folio.unrealized_profit_loss ?? folio.unrealizedProfitLoss ?? 0),
+              totalProfitLoss: Number(folio.total_profit_loss ?? folio.totalProfitLoss ?? 0),
+              unrealizedProfitLossPercentage: Number(folio.unrealized_profit_loss_percentage ?? folio.unrealizedProfitLossPercentage ?? 0),
+              totalUnitsPurchased: Number(folio.total_units_purchased ?? folio.totalUnitsPurchased ?? 0),
+              totalUnitsSold: Number(folio.total_units_sold ?? folio.totalUnitsSold ?? 0),
+              currentUnits: currentUnits,
+              averageBuyPrice: currentUnits > 0 ? totalInvested / currentUnits : 0,
+              currentNav: currentUnits > 0 ? currentValue / currentUnits : 0,
+            }
+          })
+        }))
       }
+      
+      setSummary(transformedData)
+    } catch (err: any) {
+      console.error('Error fetching holdings:', err)
+      toast.error('Failed to load holdings data')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchSummary()
   }, [selectedPortfolio])
 
@@ -246,6 +250,10 @@ export default function Holdings() {
     }
   }
 
+  const handleTransactionAdded = () => {
+    fetchSummary() // Refresh holdings data
+  }
+
   const exportToCSV = () => {
     if (!summary || filteredAndSortedHoldings.length === 0) {
       toast.error('No data to export')
@@ -329,6 +337,14 @@ export default function Holdings() {
             onSelect={setSelectedPortfolio}
             isLoading={loadingPortfolios}
           />
+          <Button
+            variant="primary"
+            onClick={() => setShowAddTransactionModal(true)}
+            disabled={!selectedPortfolio}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Transaction
+          </Button>
           <Button
             variant="secondary"
             onClick={exportToCSV}
@@ -617,7 +633,7 @@ export default function Holdings() {
             <button
               type="button"
               onClick={() => {
-                toast.info('Add transaction feature coming soon')
+                setShowAddTransactionModal(true)
                 setOpenActionsMenu(null)
                 setMenuPosition(null)
               }}
@@ -640,6 +656,16 @@ export default function Holdings() {
             </button>
           </div>
         </div>
+      )}
+      
+      {/* Add Transaction Modal */}
+      {selectedPortfolio && (
+        <AddTransactionModal
+          isOpen={showAddTransactionModal}
+          onClose={() => setShowAddTransactionModal(false)}
+          portfolioId={selectedPortfolio.id}
+          onSuccess={handleTransactionAdded}
+        />
       )}
     </div>
   )
