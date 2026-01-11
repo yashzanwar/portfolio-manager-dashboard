@@ -64,6 +64,10 @@ export default function Holdings() {
   
   // Add Transaction Modal
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
+  const [prefilledTransactionData, setPrefilledTransactionData] = useState<{
+    scheme?: { isin: string; schemeName: string; amc: string; schemeType: string }
+    folioNumber?: string
+  }>({})
   
   // Close menu when clicking outside
   useEffect(() => {
@@ -339,7 +343,10 @@ export default function Holdings() {
           />
           <Button
             variant="primary"
-            onClick={() => setShowAddTransactionModal(true)}
+            onClick={() => {
+              setPrefilledTransactionData({}) // Clear prefilled data for global button
+              setShowAddTransactionModal(true)
+            }}
             disabled={!selectedPortfolio}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -633,6 +640,26 @@ export default function Holdings() {
             <button
               type="button"
               onClick={() => {
+                const folio = filteredAndSortedHoldings
+                  .flatMap((f: any) => f.folios)
+                  .find((fol: any) => fol.folioNumber === openActionsMenu)
+                const fund = filteredAndSortedHoldings.find((f: any) =>
+                  f.folios.some((fol: any) => fol.folioNumber === openActionsMenu)
+                )
+                
+                // Set prefilled data with scheme and folio information
+                if (folio && fund) {
+                  setPrefilledTransactionData({
+                    scheme: {
+                      isin: fund.isin,
+                      schemeName: fund.schemeName,
+                      amc: fund.amc,
+                      schemeType: fund.schemeType
+                    },
+                    folioNumber: folio.folioNumber
+                  })
+                }
+                
                 setShowAddTransactionModal(true)
                 setOpenActionsMenu(null)
                 setMenuPosition(null)
@@ -662,9 +689,14 @@ export default function Holdings() {
       {selectedPortfolio && (
         <AddTransactionModal
           isOpen={showAddTransactionModal}
-          onClose={() => setShowAddTransactionModal(false)}
+          onClose={() => {
+            setShowAddTransactionModal(false)
+            setPrefilledTransactionData({}) // Clear prefilled data on close
+          }}
           portfolioId={selectedPortfolio.id}
           onSuccess={handleTransactionAdded}
+          prefilledScheme={prefilledTransactionData.scheme as any}
+          prefilledFolioNumber={prefilledTransactionData.folioNumber}
         />
       )}
     </div>

@@ -20,6 +20,8 @@ interface AddTransactionModalProps {
   onClose: () => void
   portfolioId: number
   onSuccess: () => void
+  prefilledScheme?: Scheme
+  prefilledFolioNumber?: string
 }
 
 type TransactionType = 'PURCHASE' | 'REDEMPTION'
@@ -29,7 +31,9 @@ export function AddTransactionModal({
   isOpen,
   onClose,
   portfolioId,
-  onSuccess
+  onSuccess,
+  prefilledScheme,
+  prefilledFolioNumber
 }: AddTransactionModalProps) {
   // Form state
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,13 +58,27 @@ export function AddTransactionModal({
   // Calculated value
   const [calculatedValue, setCalculatedValue] = useState<number | null>(null)
 
-  // Set default date to today
+  // Set default date to today and handle prefilled data
   useEffect(() => {
-    if (isOpen && !transactionDate) {
-      const today = new Date().toISOString().split('T')[0]
-      setTransactionDate(today)
+    if (isOpen) {
+      // Set default date
+      if (!transactionDate) {
+        const today = new Date().toISOString().split('T')[0]
+        setTransactionDate(today)
+      }
+      
+      // Pre-populate scheme if provided
+      if (prefilledScheme && !selectedScheme) {
+        setSelectedScheme(prefilledScheme)
+        setSearchQuery(prefilledScheme.schemeName)
+      }
+      
+      // Pre-populate folio number if provided
+      if (prefilledFolioNumber && !folioNumber) {
+        setFolioNumber(prefilledFolioNumber)
+      }
     }
-  }, [isOpen, transactionDate])
+  }, [isOpen, transactionDate, prefilledScheme, prefilledFolioNumber, selectedScheme, folioNumber])
 
   // Search schemes with debounce
   const debounceTimeout = useRef<ReturnType<typeof setTimeout>>()
