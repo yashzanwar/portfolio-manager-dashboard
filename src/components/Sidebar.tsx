@@ -1,4 +1,4 @@
-import { LayoutDashboard, Briefcase, TrendingUp, Upload, FileText, Settings, X, Receipt } from 'lucide-react'
+import { LayoutDashboard, Briefcase, TrendingUp, Upload, FileText, Settings, X, Receipt, Repeat } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Briefcase, label: 'Portfolios', path: '/portfolios' },
   { icon: TrendingUp, label: 'Holdings', path: '/holdings' },
+  { icon: Repeat, label: 'Schedules', path: '/schedules' },
   { icon: Receipt, label: 'Transactions', path: '/transactions' },
   { icon: Upload, label: 'Import CAS', path: '/import' },
   { icon: FileText, label: 'Reports', path: '/reports' },

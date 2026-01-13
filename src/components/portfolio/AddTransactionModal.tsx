@@ -24,7 +24,7 @@ interface AddTransactionModalProps {
   prefilledFolioNumber?: string
 }
 
-type TransactionType = 'PURCHASE' | 'REDEMPTION'
+type TransactionType = 'PURCHASE' | 'REDEMPTION' | 'PURCHASE_SIP' | 'REDEMPTION_SWP'
 type InputMode = 'amount' | 'units'
 
 export function AddTransactionModal({
@@ -47,6 +47,12 @@ export function AddTransactionModal({
   const [amount, setAmount] = useState('')
   const [units, setUnits] = useState('')
   const [description, setDescription] = useState('')
+
+  // Schedule-specific state (for SIP/SWP)
+  const [frequency, setFrequency] = useState('MONTHLY')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [totalInstallments, setTotalInstallments] = useState('')
 
   // Loading and NAV states
   const [searchingSchemes, setSearchingSchemes] = useState(false)
@@ -184,7 +190,7 @@ export function AddTransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation
+    // Common validation
     if (!selectedScheme) {
       toast.error('Please select a scheme')
       return
@@ -193,43 +199,88 @@ export function AddTransactionModal({
       toast.error('Please enter folio number')
       return
     }
-    if (!transactionDate) {
-      toast.error('Please select transaction date')
-      return
+
+    const isSchedule = transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP'
+
+    // Validation for one-time transactions (Buy/Sell)
+    if (!isSchedule) {
+      if (!transactionDate) {
+        toast.error('Please select transaction date')
+        return
+      }
+      if (inputMode === 'amount' && !amount) {
+        toast.error('Please enter amount')
+        return
+      }
+      if (inputMode === 'units' && !units) {
+        toast.error('Please enter units')
+        return
+      }
     }
-    if (inputMode === 'amount' && !amount) {
-      toast.error('Please enter amount')
-      return
-    }
-    if (inputMode === 'units' && !units) {
-      toast.error('Please enter units')
-      return
+
+    // Validation for schedules (SIP/SWP)
+    if (isSchedule) {
+      if (!amount) {
+        toast.error('Please enter amount')
+        return
+      }
+      if (!startDate) {
+        toast.error('Please select start date')
+        return
+      }
     }
 
     setSubmitting(true)
     try {
-      const payload: any = {
-        isin: selectedScheme.isin,
-        folioNumber: folioNumber.trim(),
-        transactionDate,
-        transactionType,
-        description: description.trim() || undefined
-      }
+      if (isSchedule) {
+        // Create schedule for SIP/SWP
+        // Extract day from start_date for day_of_execution
+        const dayOfMonth = new Date(startDate).getDate()
+        
+        const payload = {
+          portfolio_id: portfolioId,
+          folio_number: folioNumber.trim(),
+          isin: selectedScheme.isin,
+          schedule_type: transactionType === 'PURCHASE_SIP' ? 'SIP' : 'SWP',
+          amount: Number.parseFloat(amount),
+          start_date: startDate,
+          end_date: endDate || null,
+          frequency,
+          day_of_execution: dayOfMonth,
+          total_installments: totalInstallments ? Number.parseInt(totalInstallments) : null
+        }
 
-      if (inputMode === 'amount') {
-        payload.amount = Number.parseFloat(amount)
+        await apiClient.post('/schedules', payload)
+        
+        const typeLabel = transactionType === 'PURCHASE_SIP' ? 'SIP' : 'SWP'
+        toast.success(`${typeLabel} schedule created successfully`)
       } else {
-        payload.units = Number.parseFloat(units)
-      }
+        // Create one-time transaction for Buy/Sell
+        const payload: any = {
+          isin: selectedScheme.isin,
+          folioNumber: folioNumber.trim(),
+          transactionDate,
+          transactionType,
+          description: description.trim() || undefined
+        }
 
-      await apiClient.post(`/portfolios/${portfolioId}/transactions/manual`, payload)
+        if (inputMode === 'amount') {
+          payload.amount = Number.parseFloat(amount)
+        } else {
+          payload.units = Number.parseFloat(units)
+        }
+
+        await apiClient.post(`/portfolios/${portfolioId}/transactions/manual`, payload)
+        
+        const typeLabel = transactionType === 'PURCHASE' ? 'Buy' : 'Sell'
+        toast.success(`${typeLabel} transaction added successfully`)
+      }
       
-      toast.success(`${transactionType === 'PURCHASE' ? 'Purchase' : 'Redemption'} transaction added successfully`)
       onSuccess()
       handleClose()
     } catch (error: any) {
-      console.error('Error adding transaction:', error)
-      const message = error.response?.data?.message || 'Failed to add transaction'
+      console.error('Error:', error)
+      const message = error.response?.data?.message || `Failed to ${isSchedule ? 'create schedule' : 'add transaction'}`
       toast.error(message)
     } finally {
       setSubmitting(false)
@@ -252,6 +303,11 @@ export function AddTransactionModal({
     setNav(null)
     setNavDate(null)
     setCalculatedValue(null)
+    // Reset schedule fields
+    setFrequency('MONTHLY')
+    setStartDate('')
+    setEndDate('')
+    setTotalInstallments('')
     onClose()
   }
 
@@ -264,8 +320,11 @@ export function AddTransactionModal({
     })
   }
 
+  const isSchedule = transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP'
+  const modalTitle = isSchedule ? 'Create Schedule' : 'Add Transaction'
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Transaction">
+    <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} size="xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Scheme Search */}
         <div>
@@ -350,15 +409,16 @@ export function AddTransactionModal({
           />
         </div>
 
-        {/* Transaction Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Transaction Date *
-          </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="date"
+        {/* Transaction Date - Only for Buy/Sell */}
+        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Transaction Date *
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="date"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
@@ -367,10 +427,11 @@ export function AddTransactionModal({
               required
             />
           </div>
-        </div>
+          </div>
+        )}
 
-        {/* NAV Display */}
-        {selectedScheme && transactionDate && (
+        {/* NAV Display - Only for Buy/Sell */}
+        {selectedScheme && transactionDate && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             {fetchingNav ? (
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
@@ -401,7 +462,7 @@ export function AddTransactionModal({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Transaction Type *
           </label>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <label className="flex items-center">
               <input
                 type="radio"
@@ -412,7 +473,7 @@ export function AddTransactionModal({
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 disabled={submitting}
               />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">Purchase</span>
+              <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
             </label>
             <label className="flex items-center">
               <input
@@ -424,12 +485,115 @@ export function AddTransactionModal({
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 disabled={submitting}
               />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">Redemption</span>
+              <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="transactionType"
+                value="PURCHASE_SIP"
+                checked={transactionType === 'PURCHASE_SIP'}
+                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                disabled={submitting}
+              />
+              <span className="ml-2 text-sm text-gray-900 dark:text-white">SIP</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="transactionType"
+                value="REDEMPTION_SWP"
+                checked={transactionType === 'REDEMPTION_SWP'}
+                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                disabled={submitting}
+              />
+              <span className="ml-2 text-sm text-gray-900 dark:text-white">SWP</span>
             </label>
           </div>
         </div>
 
-        {/* Amount or Units Input */}
+        {/* Schedule Fields - Only for SIP/SWP */}
+        {(transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP') && (
+          <>
+            {/* Two-column grid for schedule fields */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Start Date *
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={submitting}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* End Date (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  End Date (Optional)
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              {/* Frequency */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Frequency *
+                </label>
+                <select
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={submitting}
+                  required
+                >
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="QUARTERLY">Quarterly</option>
+                  <option value="WEEKLY">Weekly</option>
+                </select>
+              </div>
+
+              {/* Total Installments (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Total Installments (Optional)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={totalInstallments}
+                  onChange={(e) => setTotalInstallments(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Leave blank for perpetual"
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Amount or Units Input - Only for Buy/Sell */}
+        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Enter Amount or Units *
@@ -510,8 +674,33 @@ export function AddTransactionModal({
             </div>
           )}
         </div>
+        )}
 
-        {/* Description */}
+        {/* Amount Input - Only for SIP/SWP */}
+        {(transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP') && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Amount *
+            </label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="number"
+                step="0.01"
+                min="100"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter amount"
+                disabled={submitting}
+                required
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Description - Only for Buy/Sell */}
+        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Description (Optional)
@@ -525,6 +714,7 @@ export function AddTransactionModal({
             disabled={submitting}
           />
         </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -540,16 +730,16 @@ export function AddTransactionModal({
           <Button
             type="submit"
             variant="primary"
-            disabled={submitting || !selectedScheme || !nav || fetchingNav}
+            disabled={submitting || !selectedScheme || ((transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (!nav || fetchingNav))}
             className="flex-1"
           >
             {submitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Adding...
+                {transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP' ? 'Creating...' : 'Adding...'}
               </>
             ) : (
-              'Add Transaction'
+              transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP' ? 'Create Schedule' : 'Add Transaction'
             )}
           </Button>
         </div>

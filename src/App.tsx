@@ -12,6 +12,7 @@ import Holdings from './pages/Holdings'
 import ImportCAS from './pages/ImportCAS'
 import FolioTransactions from './pages/FolioTransactions'
 import Transactions from './pages/Transactions'
+import Schedules from './pages/Schedules'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function App() {
               <Route path="/portfolios" element={<Portfolios />} />
               <Route path="/holdings" element={<Holdings />} />
               <Route path="/holdings/:portfolioId/folio/:folioNumber" element={<FolioTransactions />} />
+              <Route path="/schedules" element={<Schedules />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/import" element={<ImportCAS />} />
             </Route>
