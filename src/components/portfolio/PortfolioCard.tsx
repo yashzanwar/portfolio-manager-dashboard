@@ -5,10 +5,10 @@ import { formatDate } from '../../utils/formatters'
 
 interface PortfolioCardProps {
   portfolio: Portfolio
-  onEdit: (portfolio: Portfolio) => void
-  onDelete: (portfolio: Portfolio) => void
-  onSetPrimary: (portfolio: Portfolio) => void
-  onView: (portfolio: Portfolio) => void
+  onEdit: (portfolio: Portfolio, e?: React.MouseEvent) => void
+  onDelete: (portfolio: Portfolio, e?: React.MouseEvent) => void
+  onSetPrimary: (portfolio: Portfolio, e?: React.MouseEvent) => void
+  onView: (portfolio: Portfolio, e?: React.MouseEvent) => void
 }
 
 export const PortfolioCard: React.FC<PortfolioCardProps> = ({
@@ -60,27 +60,39 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
       <CardFooter>
         <div className="flex gap-2">
           <button
-            onClick={() => onView(portfolio)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onView(portfolio, e)
+            }}
             className="flex-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 border border-blue-600 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
           >
             View
           </button>
           <button
-            onClick={() => onEdit(portfolio)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(portfolio, e)
+            }}
             className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Edit
           </button>
           {!portfolio.isPrimary && (
             <button
-              onClick={() => onSetPrimary(portfolio)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSetPrimary(portfolio, e)
+              }}
               className="flex-1 px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 border border-green-600 dark:border-green-400 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
             >
               Set Primary
             </button>
           )}
           <button
-            onClick={() => onDelete(portfolio)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(portfolio, e)
+            }}
             className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border border-red-600 dark:border-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             Delete

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Briefcase, Plus } from 'lucide-react'
+import { Briefcase, Plus, CheckSquare, Square, Layers } from 'lucide-react'
 import {
   usePortfolios,
   useCreatePortfolio,
@@ -8,11 +8,16 @@ import {
   useDeletePortfolio,
   useSetPrimaryPortfolio,
 } from '../hooks/usePortfolios'
+import { useCombinedPortfolio } from '../hooks/useCombinedPortfolio'
 import { Portfolio, CreatePortfolioRequest, UpdatePortfolioRequest } from '../types/portfolio'
 import { PortfolioCard } from '../components/portfolio/PortfolioCard'
 import { PortfolioFormModal } from '../components/portfolio/PortfolioFormModal'
 import { DeletePortfolioModal } from '../components/portfolio/DeletePortfolioModal'
-import { Button, PortfolioCardSkeleton, EmptyState } from '../components/common'
+import { CombinedSummaryCard } from '../components/portfolio/CombinedSummaryCard'
+import { PortfolioBreakdownTable } from '../components/portfolio/PortfolioBreakdownTable'
+import { CombinedHoldingsTable } from '../components/portfolio/CombinedHoldingsTable'
+import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfolioChart'
+import { Button, PortfolioCardSkeleton, EmptyState, Card } from '../components/common'
 
 export default function Portfolios() {
   const navigate = useNavigate()
@@ -21,8 +26,10 @@ export default function Portfolios() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null)
+  const [selectedPortfolioIds, setSelectedPortfolioIds] = useState<number[]>([])
 
   const { data: portfolios = [], isLoading, error } = usePortfolios()
+  const { data: combinedData, isLoading: isCombinedLoading } = useCombinedPortfolio(selectedPortfolioIds)
   const createMutation = useCreatePortfolio()
   const updateMutation = useUpdatePortfolio()
   const deleteMutation = useDeletePortfolio()
@@ -60,6 +67,22 @@ export default function Portfolios() {
 
   const handleView = (portfolio: Portfolio) => {
     navigate('/dashboard', { state: { portfolioId: portfolio.id } })
+  }
+
+  const togglePortfolioSelection = (portfolioId: number) => {
+    setSelectedPortfolioIds(prev =>
+      prev.includes(portfolioId)
+        ? prev.filter(id => id !== portfolioId)
+        : [...prev, portfolioId]
+    )
+  }
+
+  const selectAll = () => {
+    setSelectedPortfolioIds(filteredPortfolios.map(p => p.id))
+  }
+
+  const deselectAll = () => {
+    setSelectedPortfolioIds([])
   }
 
   const filteredPortfolios = portfolios.filter((p) =>
@@ -130,6 +153,81 @@ export default function Portfolios() {
         </Button>
       </div>
 
+      {/* Multi-Select Controls */}
+      {filteredPortfolios.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {selectedPortfolioIds.length} of {filteredPortfolios.length} selected
+                </span>
+              </div>
+              {selectedPortfolioIds.length > 0 && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Click on portfolios to select/deselect
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAll}
+                disabled={selectedPortfolioIds.length === filteredPortfolios.length}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={deselectAll}
+                disabled={selectedPortfolioIds.length === 0}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Combined Summary */}
+      {selectedPortfolioIds.length > 0 && combinedData && !isCombinedLoading && (
+        <>
+          <CombinedSummaryCard
+            summary={combinedData.overall}
+            portfolioCount={combinedData.portfolio_count}
+            mode={combinedData.mode}
+          />
+          {/* Portfolio Value Chart */}
+          <CombinedPortfolioChart
+            portfolioIds={selectedPortfolioIds}
+            mode={combinedData.mode}
+          />
+          {/* Portfolio Breakdown Table (only for combined mode) */}
+          <PortfolioBreakdownTable
+            portfolios={combinedData.portfolios}
+            mode={combinedData.mode}
+          />
+
+          {/* Combined Holdings Table */}
+          <CombinedHoldingsTable
+            funds={combinedData.funds}
+            mode={combinedData.mode}
+          />
+        </>
+      )}
+
+      {selectedPortfolioIds.length > 0 && isCombinedLoading && (
+        <Card className="p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading combined summary...</span>
+          </div>
+        </Card>
+      )}
+
       {/* Search */}
       <div className="max-w-md">
         <input
@@ -162,16 +260,56 @@ export default function Portfolios() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPortfolios.map((portfolio) => (
-            <PortfolioCard
-              key={portfolio.id}
-              portfolio={portfolio}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onSetPrimary={handleSetPrimary}
-              onView={handleView}
-            />
-          ))}
+          {filteredPortfolios.map((portfolio) => {
+            const isSelected = selectedPortfolioIds.includes(portfolio.id)
+            return (
+              <div
+                key={portfolio.id}
+                className="relative cursor-pointer"
+                onClick={() => togglePortfolioSelection(portfolio.id)}
+              >
+                {/* Selection Indicator */}
+                <div className={`absolute -top-2 -right-2 z-10 rounded-full p-1 ${
+                  isSelected
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                }`}>
+                  {isSelected ? (
+                    <CheckSquare className="w-6 h-6" />
+                  ) : (
+                    <Square className="w-6 h-6" />
+                  )}
+                </div>
+                
+                {/* Portfolio Card with selection border */}
+                <div className={`transition-all ${
+                  isSelected
+                    ? 'ring-4 ring-blue-500 ring-opacity-50 scale-[1.02]'
+                    : ''
+                }`}>
+                  <PortfolioCard
+                    portfolio={portfolio}
+                    onEdit={(p, e) => {
+                      if (e) e.stopPropagation()
+                      handleEdit(p)
+                    }}
+                    onDelete={(p, e) => {
+                      if (e) e.stopPropagation()
+                      handleDelete(p)
+                    }}
+                    onSetPrimary={(p, e) => {
+                      if (e) e.stopPropagation()
+                      handleSetPrimary(p)
+                    }}
+                    onView={(p, e) => {
+                      if (e) e.stopPropagation()
+                      handleView(p)
+                    }}
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 

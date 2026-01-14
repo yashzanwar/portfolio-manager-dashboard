@@ -1,5 +1,6 @@
 import { apiClient } from './api'
 import { PortfolioSummaryResponse, Portfolio, CreatePortfolioRequest, UpdatePortfolioRequest } from '../types/portfolio'
+import { CombinedPortfolioSummary } from '../types/combinedPortfolio'
 
 // Transform date arrays from backend to ISO strings
 function transformPortfolio(portfolio: any): Portfolio {
@@ -119,6 +120,35 @@ export class PortfolioAPI {
     const response = await apiClient.get(
       `/portfolio-value/${portfolioId}/complete-history`
     )
+    return response.data
+  }
+
+  // Combined Portfolio APIs
+  static async getCombinedSummary(portfolioIds: number[]): Promise<CombinedPortfolioSummary> {
+    const idsParam = portfolioIds.join(',')
+    const response = await apiClient.get<CombinedPortfolioSummary>(`/portfolios/summary?ids=${idsParam}`)
+    return response.data
+  }
+
+  // Get combined portfolio value history
+  static async getCombinedHistory(
+    portfolioIds: number[],
+    startDate?: string,
+    endDate?: string
+  ): Promise<any> {
+    const idsParam = portfolioIds.join(',')
+    const params = new URLSearchParams({ ids: idsParam })
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
+    
+    const response = await apiClient.get(`/portfolio-value/history?${params.toString()}`)
+    return response.data
+  }
+
+  // Get complete combined portfolio history
+  static async getCombinedCompleteHistory(portfolioIds: number[]): Promise<any> {
+    const idsParam = portfolioIds.join(',')
+    const response = await apiClient.get(`/portfolio-value/complete-history?ids=${idsParam}`)
     return response.data
   }
 }
