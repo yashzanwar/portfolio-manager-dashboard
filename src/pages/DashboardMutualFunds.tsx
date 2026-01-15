@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Download, Search, Filter, ChevronDown, ChevronUp, MoreVertical, Eye, Plus, Trash2 } from 'lucide-react'
+import { Download, Search, Filter, ChevronDown, ChevronUp, MoreVertical, Eye, Plus, Trash2, Tag, TrendingUp, Info } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/common/Card'
 import { Button, TableSkeleton, EmptyState } from '../components/common'
-import { PortfolioSelector } from '../components/portfolio/PortfolioSelector'
 import { AddTransactionModal } from '../components/portfolio/AddTransactionModal'
+import { FolioTransactionsModal } from '../components/portfolio/FolioTransactionsModal'
 import { usePortfolios } from '../hooks/usePortfolios'
-import { Portfolio } from '../types/portfolio'
+import { usePortfolioContext } from '../context/PortfolioContext'
+import { useCombinedPortfolio } from '../hooks/useCombinedPortfolio'
+import { useCombinedHistory } from '../hooks/useCombinedHistory'
+import { CombinedSummaryCard } from '../components/portfolio/CombinedSummaryCard'
+import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfolioChart'
+import { PortfolioBreakdownTable } from '../components/portfolio/PortfolioBreakdownTable'
 import { PortfolioAPI } from '../services/portfolioApi'
 import { formatCurrency, formatNumber, formatPercentage } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -24,6 +29,8 @@ interface Folio {
   currentUnits: number
   averageBuyPrice: number
   currentNav: number
+  portfolioId?: number
+  portfolioName?: string
 }
 
 interface Fund {
@@ -34,23 +41,24 @@ interface Fund {
   folios: Folio[]
 }
 
-interface PortfolioSummary {
-  investorName: string
-  portfolioOverview: {
-    totalInvested: number
-    currentValue: number
-    totalProfitLoss: number
-    totalProfitLossPercentage: number
-  }
-  funds: Fund[]
-}
-
-export default function Holdings() {
+export default function DashboardMutualFunds() {
   const { data: portfolios = [], isLoading: loadingPortfolios } = usePortfolios()
+  const { selectedPortfolioIds } = usePortfolioContext()
   const navigate = useNavigate()
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null)
-  const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [combinedSummary, setCombinedSummary] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  
+  // Fetch combined portfolio data for summary cards
+  const { data: summaryData, isLoading: isSummaryLoading } = useCombinedPortfolio(
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+  
+  const { data: historyData, isLoading: isHistoryLoading } = useCombinedHistory(
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+
+  // Check if user has selected portfolios
+  const hasSelectedPortfolios = selectedPortfolioIds.length > 0
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -68,6 +76,14 @@ export default function Holdings() {
     scheme?: { isin: string; schemeName: string; amc: string; schemeType: string }
     folioNumber?: string
   }>({})
+  
+  // Transactions Modal
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false)
+  const [selectedFolioForTransactions, setSelectedFolioForTransactions] = useState<{
+    portfolioId: number
+    folioNumber: string
+    schemeName: string
+  } | null>(null)
   
   // Close menu when clicking outside
   useEffect(() => {
@@ -89,38 +105,46 @@ export default function Holdings() {
   const [sortBy, setSortBy] = useState<'scheme' | 'invested' | 'current' | 'pl' | 'returns'>('current')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Select default portfolio
-  useEffect(() => {
-    if (portfolios.length > 0 && !selectedPortfolio) {
-      const primary = portfolios.find(p => p.isPrimary) || portfolios[0]
-      setSelectedPortfolio(primary)
+  // Fetch combined summary for selected portfolios
+  const fetchCombinedSummary = async () => {
+    if (!portfolios.length || selectedPortfolioIds.length === 0) {
+      setCombinedSummary(null)
+      return
     }
-  }, [portfolios, selectedPortfolio])
-
-  // Fetch portfolio summary
-  const fetchSummary = async () => {
-    if (!selectedPortfolio) return
 
     setLoading(true)
     try {
-      const data = await PortfolioAPI.getPortfolioSummary(selectedPortfolio.id)
-      
-      // Transform snake_case from backend to camelCase for frontend
-      const transformedData = {
-        investorName: data.investor_name || data.investorName || 'No Data',
-        portfolioOverview: {
-          totalInvested: data.portfolio_overview?.total_invested ?? data.portfolioOverview?.totalInvested ?? 0,
-          currentValue: data.portfolio_overview?.current_value ?? data.portfolioOverview?.currentValue ?? 0,
-          totalProfitLoss: data.portfolio_overview?.total_profit_loss ?? data.portfolioOverview?.totalProfitLoss ?? 0,
-          totalProfitLossPercentage: data.portfolio_overview?.unrealized_profit_loss_percentage ?? data.portfolioOverview?.totalProfitLossPercentage ?? 0,
-        },
-        funds: (data.funds || []).map((fund: any) => ({
-          isin: fund.isin,
-          schemeName: fund.scheme_name || fund.schemeName,
-          amc: fund.amc,
-          schemeType: fund.scheme_type || fund.schemeType,
-          folios: (fund.folios || []).map((folio: any) => {
-            // Handle both snake_case (from backend) and camelCase (from cached data)
+      // Fetch summaries for all selected portfolios
+      const summaries = await Promise.all(
+        selectedPortfolioIds.map(async (id) => {
+          const portfolio = portfolios.find(p => p.id === id)
+          const data = await PortfolioAPI.getPortfolioSummary(id)
+          return { ...data, portfolioId: id, portfolioName: portfolio?.portfolioName || `Portfolio ${id}` }
+        })
+      )
+
+      // Combine all funds across portfolios
+      const allFunds: any[] = []
+      const portfolioOverview = {
+        totalInvested: 0,
+        currentValue: 0,
+        totalProfitLoss: 0,
+        totalProfitLossPercentage: 0
+      }
+
+      summaries.forEach((summary) => {
+        // Update portfolio overview totals
+        portfolioOverview.totalInvested += summary.portfolio_overview?.total_invested ?? summary.portfolioOverview?.totalInvested ?? 0
+        portfolioOverview.currentValue += summary.portfolio_overview?.current_value ?? summary.portfolioOverview?.currentValue ?? 0
+        portfolioOverview.totalProfitLoss += summary.portfolio_overview?.total_profit_loss ?? summary.portfolioOverview?.totalProfitLoss ?? 0
+
+        // Process funds
+        ;(summary.funds || []).forEach((fund: any) => {
+          const fundKey = fund.isin
+          const existingFund = allFunds.find(f => f.isin === fundKey)
+
+          // Transform folio data with portfolio info
+          const transformedFolios = (fund.folios || []).map((folio: any) => {
             const currentUnits = Number(folio.current_units ?? folio.currentUnits ?? 0)
             const totalInvested = Number(folio.total_invested ?? folio.totalInvested ?? 0)
             const currentValue = Number(folio.current_value ?? folio.currentValue ?? 0)
@@ -138,12 +162,39 @@ export default function Holdings() {
               currentUnits: currentUnits,
               averageBuyPrice: currentUnits > 0 ? totalInvested / currentUnits : 0,
               currentNav: currentUnits > 0 ? currentValue / currentUnits : 0,
+              portfolioId: summary.portfolioId,
+              portfolioName: summary.portfolioName
             }
           })
-        }))
+
+          if (existingFund) {
+            // Merge folios from same fund across portfolios
+            existingFund.folios.push(...transformedFolios)
+          } else {
+            // Add new fund
+            allFunds.push({
+              isin: fund.isin,
+              schemeName: fund.scheme_name || fund.schemeName,
+              amc: fund.amc,
+              schemeType: fund.scheme_type || fund.schemeType,
+              folios: transformedFolios
+            })
+          }
+        })
+      })
+
+      // Calculate overall percentage
+      portfolioOverview.totalProfitLossPercentage = 
+        portfolioOverview.totalInvested > 0 
+          ? (portfolioOverview.totalProfitLoss / portfolioOverview.totalInvested) * 100 
+          : 0
+
+      const data = {
+        portfolioOverview,
+        funds: allFunds
       }
       
-      setSummary(transformedData)
+      setCombinedSummary(data)
     } catch (err: any) {
       console.error('Error fetching holdings:', err)
       toast.error('Failed to load holdings data')
@@ -153,17 +204,17 @@ export default function Holdings() {
   }
 
   useEffect(() => {
-    fetchSummary()
-  }, [selectedPortfolio])
+    fetchCombinedSummary()
+  }, [selectedPortfolioIds, portfolios])
 
   // Get unique AMCs and scheme types
   const { uniqueAmcs, uniqueSchemeTypes } = useMemo(() => {
-    if (!summary) return { uniqueAmcs: [], uniqueSchemeTypes: [] }
+    if (!combinedSummary) return { uniqueAmcs: [], uniqueSchemeTypes: [] }
     
     const amcs = new Set<string>()
     const types = new Set<string>()
     
-    summary.funds.forEach(fund => {
+    combinedSummary.funds.forEach((fund: any) => {
       if (fund.amc) amcs.add(fund.amc)
       if (fund.schemeType) types.add(fund.schemeType)
     })
@@ -172,16 +223,16 @@ export default function Holdings() {
       uniqueAmcs: Array.from(amcs).sort(),
       uniqueSchemeTypes: Array.from(types).sort()
     }
-  }, [summary])
+  }, [combinedSummary])
 
   // Filter and sort holdings
   const filteredAndSortedHoldings = useMemo(() => {
-    if (!summary) return []
+    if (!combinedSummary) return []
     
-    let filtered = summary.funds.filter(fund => {
+    let filtered = combinedSummary.funds.filter((fund: any) => {
       const matchesSearch = fund.schemeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            fund.isin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           fund.folios.some(f => f.folioNumber.includes(searchTerm))
+                           fund.folios.some((f: any) => f.folioNumber.includes(searchTerm) || f.portfolioName?.toLowerCase().includes(searchTerm.toLowerCase()))
       
       const matchesSchemeType = schemeTypeFilter === 'All' || fund.schemeType === schemeTypeFilter
       const matchesAmc = amcFilter === 'All' || fund.amc === amcFilter
@@ -190,8 +241,8 @@ export default function Holdings() {
     })
     
     // Calculate totals for each fund
-    const withTotals = filtered.map(fund => {
-      const totals = fund.folios.reduce((acc, folio) => ({
+    const withTotals = filtered.map((fund: any) => {
+      const totals = fund.folios.reduce((acc: any, folio: any) => ({
         invested: acc.invested + folio.totalInvested,
         current: acc.current + folio.currentValue,
         pl: acc.pl + folio.totalProfitLoss,
@@ -243,7 +294,7 @@ export default function Holdings() {
       
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
     })
-  }, [summary, searchTerm, schemeTypeFilter, amcFilter, sortBy, sortOrder])
+  }, [combinedSummary, searchTerm, schemeTypeFilter, amcFilter, sortBy, sortOrder])
 
   const handleSort = (key: typeof sortBy) => {
     if (sortBy === key) {
@@ -255,23 +306,24 @@ export default function Holdings() {
   }
 
   const handleTransactionAdded = () => {
-    fetchSummary() // Refresh holdings data
+    fetchCombinedSummary() // Refresh holdings data
   }
 
   const exportToCSV = () => {
-    if (!summary || filteredAndSortedHoldings.length === 0) {
+    if (!combinedSummary || filteredAndSortedHoldings.length === 0) {
       toast.error('No data to export')
       return
     }
     
-    const headers = ['Scheme Name', 'AMC', 'ISIN', 'Scheme Type', 'Folio Number', 'Units', 'Avg Buy Price', 'Current NAV', 'Invested', 'Current Value', 'Realized P&L', 'Unrealized P&L', 'Total P&L', 'Returns %']
+    const headers = ['Scheme Name', 'AMC', 'ISIN', 'Scheme Type', 'Portfolio', 'Folio Number', 'Units', 'Avg Buy Price', 'Current NAV', 'Invested', 'Current Value', 'Realized P&L', 'Unrealized P&L', 'Total P&L', 'Returns %']
     
-    const rows = filteredAndSortedHoldings.flatMap(fund =>
-      fund.folios.map(folio => [
+    const rows = filteredAndSortedHoldings.flatMap((fund: any) =>
+      fund.folios.map((folio: any) => [
         fund.schemeName,
         fund.amc,
         fund.isin,
         fund.schemeType,
+        folio.portfolioName || '',
         folio.folioNumber,
         folio.currentUnits.toFixed(3),
         folio.averageBuyPrice.toFixed(2),
@@ -293,75 +345,95 @@ export default function Holdings() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `holdings_${selectedPortfolio?.portfolioName}_${new Date().toISOString().split('T')[0]}.csv`
+    const portfolioNames = selectedPortfolioIds.length === 1 
+      ? portfolios.find(p => p.id === selectedPortfolioIds[0])?.portfolioName || 'Portfolio'
+      : 'Combined'
+    link.download = `mutual_funds_${portfolioNames}_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
     
-    toast.success('Holdings exported successfully')
-  }
-
-  if (loadingPortfolios) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8">
-        <TableSkeleton rows={10} />
-      </div>
-    )
-  }
-
-  if (portfolios.length === 0) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8">
-        <EmptyState
-          icon={<Filter className="w-8 h-8 text-gray-400" />}
-          title="No Portfolios Found"
-          description="Create a portfolio and import your CAS statement to view holdings"
-          action={{
-            label: 'Go to Portfolios',
-            onClick: () => window.location.href = '/portfolios'
-          }}
-        />
-      </div>
-    )
+    toast.success('Mutual funds data exported successfully')
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Holdings</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Detailed view of your investment holdings
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Mutual Funds
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Complete overview of your mutual fund investments
+                {selectedPortfolioIds.length > 0 && (
+                  <span className="ml-2 text-blue-600 dark:text-blue-400">
+                    ({selectedPortfolioIds.length} {selectedPortfolioIds.length === 1 ? 'portfolio' : 'portfolios'} selected)
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <PortfolioSelector
-            portfolios={portfolios}
-            selectedPortfolio={selectedPortfolio}
-            onSelect={setSelectedPortfolio}
-            isLoading={loadingPortfolios}
-          />
-          <Button
-            variant="primary"
-            onClick={() => {
-              setPrefilledTransactionData({}) // Clear prefilled data for global button
-              setShowAddTransactionModal(true)
-            }}
-            disabled={!selectedPortfolio}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Transaction
-          </Button>
           <Button
             variant="secondary"
             onClick={exportToCSV}
-            disabled={!summary || filteredAndSortedHoldings.length === 0}
+            disabled={!combinedSummary || filteredAndSortedHoldings.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
         </div>
       </div>
+
+      {/* Show message if no portfolios selected */}
+      {!hasSelectedPortfolios && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                No Portfolios Selected
+              </h3>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                Please select one or more portfolios from the dropdown in the navbar to view your mutual fund data.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hasSelectedPortfolios && (
+        <>
+          {/* Summary Cards */}
+          {summaryData && (
+            <CombinedSummaryCard 
+              summary={summaryData.overall}
+              portfolioCount={summaryData.portfolio_count}
+              mode={summaryData.mode}
+            />
+          )}
+
+          {/* Portfolio Value Chart */}
+          <CombinedPortfolioChart 
+            portfolioIds={selectedPortfolioIds}
+            mode={selectedPortfolioIds.length === 1 ? 'single' : 'combined'}
+          />
+
+          {/* Portfolio Breakdown Table */}
+          {summaryData && (
+            <PortfolioBreakdownTable 
+              portfolios={summaryData.portfolios || []}
+              mode={summaryData.mode}
+            />
+          )}
+        </>
+      )}
 
       {/* Filters */}
       <Card>
@@ -424,15 +496,11 @@ export default function Holdings() {
       {/* Holdings Table */}
       {loading ? (
         <TableSkeleton rows={10} />
-      ) : !summary || filteredAndSortedHoldings.length === 0 ? (
+      ) : !combinedSummary || filteredAndSortedHoldings.length === 0 ? (
         <EmptyState
           icon={<Search className="w-8 h-8 text-gray-400" />}
-          title={searchTerm || schemeTypeFilter !== 'All' || amcFilter !== 'All' ? 'No holdings match your filters' : 'No Holdings Found'}
-          description={searchTerm || schemeTypeFilter !== 'All' || amcFilter !== 'All' ? 'Try adjusting your search or filter criteria' : 'Import your CAS statement to see holdings'}
-          action={!(searchTerm || schemeTypeFilter !== 'All' || amcFilter !== 'All') ? {
-            label: 'Import CAS',
-            onClick: () => window.location.href = '/import'
-          } : undefined}
+          title={searchTerm || schemeTypeFilter !== 'All' || amcFilter !== 'All' ? 'No holdings match your filters' : selectedPortfolioIds.length === 0 ? 'No Portfolios Selected' : 'No Holdings Found'}
+          description={searchTerm || schemeTypeFilter !== 'All' || amcFilter !== 'All' ? 'Try adjusting your search or filter criteria' : selectedPortfolioIds.length === 0 ? 'Select portfolios from the navbar to view holdings' : 'Import your CAS statement to see holdings'}
         />
       ) : (
         <Card>
@@ -510,17 +578,19 @@ export default function Holdings() {
                     {/* Expanded Folio Details */}
                     {expandedFolio === fund.isin && (
                       <tr>
-                        <td colSpan={9} className="px-6 py-4 bg-gray-50 dark:bg-gray-800">
+                        <td colSpan={10} className="px-6 py-4 bg-gray-50 dark:bg-gray-800">
                           <div className="space-y-4">
                             <h4 className="font-semibold text-gray-900 dark:text-white">Folio Details</h4>
                             <div className="overflow-x-auto overflow-y-visible">
                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-100 dark:bg-gray-700">
                                   <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Portfolio</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Folio Number</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Units</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Avg Buy Price</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Current NAV</th>
+                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">1 Day Return</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Invested</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Current Value</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Realized P&L</th>
@@ -532,11 +602,18 @@ export default function Holdings() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                                   {fund.folios.map((folio: Folio) => (
-                                    <tr key={folio.folioNumber} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <tr key={`${folio.portfolioId}-${folio.folioNumber}`} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                      <td className="px-4 py-2 text-sm">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                          <Tag className="w-3 h-3 mr-1" />
+                                          {folio.portfolioName}
+                                        </span>
+                                      </td>
                                       <td className="px-4 py-2 text-sm text-gray-900 dark:text-white font-mono">{folio.folioNumber}</td>
                                       <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white font-mono">{formatNumber(folio.currentUnits)}</td>
                                       <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(folio.averageBuyPrice)}</td>
                                       <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(folio.currentNav)}</td>
+                                      <td className="px-4 py-2 text-sm text-right font-mono text-gray-500 dark:text-gray-400">-</td>
                                       <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(folio.totalInvested)}</td>
                                       <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(folio.currentValue)}</td>
                                       <td className={`px-4 py-2 text-sm text-right font-mono ${folio.realizedProfitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -558,9 +635,9 @@ export default function Holdings() {
                                               const rect = e.currentTarget.getBoundingClientRect()
                                               setMenuPosition({
                                                 top: rect.bottom + window.scrollY,
-                                                left: rect.right - 192 + window.scrollX // 192px is menu width (w-48)
+                                                left: rect.right - 192 + window.scrollX
                                               })
-                                              setOpenActionsMenu(openActionsMenu === folio.folioNumber ? null : folio.folioNumber)
+                                              setOpenActionsMenu(openActionsMenu === `${folio.portfolioId}-${folio.folioNumber}` ? null : `${folio.portfolioId}-${folio.folioNumber}`)
                                             }}
                                             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                                           >
@@ -592,16 +669,22 @@ export default function Holdings() {
               <div className="flex gap-8">
                 <div className="text-right">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Total Invested</div>
-                  <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.portfolioOverview.totalInvested)}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(combinedSummary.portfolioOverview.totalInvested)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Current Value</div>
-                  <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.portfolioOverview.currentValue)}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(combinedSummary.portfolioOverview.currentValue)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Total P&L</div>
-                  <div className={`font-semibold ${summary.portfolioOverview.totalProfitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatCurrency(summary.portfolioOverview.totalProfitLoss)}
+                  <div className={`font-semibold ${combinedSummary.portfolioOverview.totalProfitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCurrency(combinedSummary.portfolioOverview.totalProfitLoss)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">1 Day Return</div>
+                  <div className="font-semibold text-gray-500 dark:text-gray-400">
+                    -
                   </div>
                 </div>
               </div>
@@ -610,7 +693,7 @@ export default function Holdings() {
         </Card>
       )}
       
-      {/* Actions Menu - Rendered with fixed positioning to avoid overflow issues */}
+      {/* Actions Menu */}
       {openActionsMenu && menuPosition && (
         <div
           className="fixed z-50 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 actions-menu-container"
@@ -620,14 +703,17 @@ export default function Holdings() {
             <button
               type="button"
               onClick={() => {
-                const folio = filteredAndSortedHoldings
-                  .flatMap((f: any) => f.folios)
-                  .find((fol: any) => fol.folioNumber === openActionsMenu)
+                const [portfolioId, folioNum] = openActionsMenu.split('-')
                 const fund = filteredAndSortedHoldings.find((f: any) =>
-                  f.folios.some((fol: any) => fol.folioNumber === openActionsMenu)
+                  f.folios.some((fol: any) => `${fol.portfolioId}-${fol.folioNumber}` === openActionsMenu)
                 )
-                if (folio && fund) {
-                  navigate(`/holdings/${selectedPortfolio?.id}/folio/${encodeURIComponent(folio.folioNumber)}?scheme=${encodeURIComponent(fund.schemeName)}`)
+                if (fund) {
+                  setSelectedFolioForTransactions({
+                    portfolioId: parseInt(portfolioId),
+                    folioNumber: folioNum,
+                    schemeName: fund.schemeName
+                  })
+                  setShowTransactionsModal(true)
                 }
                 setOpenActionsMenu(null)
                 setMenuPosition(null)
@@ -640,14 +726,14 @@ export default function Holdings() {
             <button
               type="button"
               onClick={() => {
+                const [portfolioId, folioNum] = openActionsMenu.split('-')
                 const folio = filteredAndSortedHoldings
                   .flatMap((f: any) => f.folios)
-                  .find((fol: any) => fol.folioNumber === openActionsMenu)
+                  .find((fol: any) => `${fol.portfolioId}-${fol.folioNumber}` === openActionsMenu)
                 const fund = filteredAndSortedHoldings.find((f: any) =>
-                  f.folios.some((fol: any) => fol.folioNumber === openActionsMenu)
+                  f.folios.some((fol: any) => `${fol.portfolioId}-${fol.folioNumber}` === openActionsMenu)
                 )
                 
-                // Set prefilled data with scheme and folio information
                 if (folio && fund) {
                   setPrefilledTransactionData({
                     scheme: {
@@ -686,17 +772,35 @@ export default function Holdings() {
       )}
       
       {/* Add Transaction Modal */}
-      {selectedPortfolio && (
+      {selectedPortfolioIds.length > 0 && (
         <AddTransactionModal
           isOpen={showAddTransactionModal}
           onClose={() => {
             setShowAddTransactionModal(false)
-            setPrefilledTransactionData({}) // Clear prefilled data on close
+            setPrefilledTransactionData({})
           }}
-          portfolioId={selectedPortfolio.id}
+          portfolioId={selectedPortfolioIds.length === 1 ? selectedPortfolioIds[0] : (prefilledTransactionData.scheme ? 
+            filteredAndSortedHoldings
+              .flatMap((f: any) => f.folios)
+              .find((fol: any) => fol.folioNumber === prefilledTransactionData.folioNumber)?.portfolioId || selectedPortfolioIds[0]
+            : selectedPortfolioIds[0])}
           onSuccess={handleTransactionAdded}
           prefilledScheme={prefilledTransactionData.scheme as any}
           prefilledFolioNumber={prefilledTransactionData.folioNumber}
+        />
+      )}
+      
+      {/* Folio Transactions Modal */}
+      {selectedFolioForTransactions && (
+        <FolioTransactionsModal
+          isOpen={showTransactionsModal}
+          onClose={() => {
+            setShowTransactionsModal(false)
+            setSelectedFolioForTransactions(null)
+          }}
+          portfolioId={selectedFolioForTransactions.portfolioId}
+          folioNumber={selectedFolioForTransactions.folioNumber}
+          schemeName={selectedFolioForTransactions.schemeName}
         />
       )}
     </div>

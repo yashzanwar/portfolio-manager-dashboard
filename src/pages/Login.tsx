@@ -47,7 +47,7 @@ export default function Login() {
       toast.success('Login successful!')
       
       // Use replace to avoid back button issues
-      navigate('/dashboard', { replace: true })
+      navigate('/dash', { replace: true })
     } catch (error: any) {
       const message = error.response?.data?.message || 'Invalid email or password'
       toast.error(message)

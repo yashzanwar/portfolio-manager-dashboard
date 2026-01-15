@@ -52,7 +52,7 @@ export default function Register() {
       toast.success('Account created successfully!')
       
       // Use replace to avoid back button issues
-      navigate('/dashboard', { replace: true })
+      navigate('/dash', { replace: true })
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to create account'
       toast.error(message)

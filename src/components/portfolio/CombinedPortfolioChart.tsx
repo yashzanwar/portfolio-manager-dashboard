@@ -68,6 +68,31 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
     })
   }, [historyData, mode])
 
+  // Calculate Y-axis domain with padding to show variations better
+  const yAxisDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 'auto']
+    
+    const values = chartData.map(d => d.total).filter(v => v != null)
+    const minValue = Math.min(...values)
+    const maxValue = Math.max(...values)
+    const range = maxValue - minValue
+    
+    // Add 5% padding on top and bottom to show variations clearly
+    const padding = range * 0.05 || maxValue * 0.05 || 1000
+    const domainMin = Math.max(0, minValue - padding)
+    const domainMax = maxValue + padding
+    
+    return [Math.floor(domainMin), Math.ceil(domainMax)]
+  }, [chartData])
+
+  // Determine line color based on gain/loss
+  const lineColor = useMemo(() => {
+    if (chartData.length < 2) return '#3B82F6' // Default blue
+    const startValue = chartData[0]?.total || 0
+    const endValue = chartData[chartData.length - 1]?.total || 0
+    return endValue >= startValue ? '#10B981' : '#EF4444' // Green for gain, Red for loss
+  }, [chartData])
+
   // Get unique portfolios from the data
   const portfolios = useMemo(() => {
     if (!historyData?.portfolios || historyData.portfolios.length === 0) return []
@@ -117,14 +142,14 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
   if (isLoading) {
     return (
       <Card>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
               Portfolio Value History
             </h3>
           </div>
-          <div className="h-80 flex items-center justify-center">
+          <div className="h-60 md:h-80 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
         </div>
@@ -135,10 +160,10 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
   if (error) {
     return (
       <Card>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
               Portfolio Value History
             </h3>
           </div>
@@ -170,25 +195,25 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
 
   return (
     <Card>
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Header with Title and Date Range Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4 mb-4 md:mb-6">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
               Portfolio Value History
             </h3>
           </div>
 
           {/* Date Range Selector */}
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
             <div className="flex gap-1">
               {DATE_RANGES.map((range) => (
                 <button
                   key={range.value}
                   onClick={() => setSelectedRange(range.value)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-2 md:px-3 py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                     selectedRange === range.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
@@ -237,9 +262,10 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
         )}
 
         {/* Chart */}
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+        <div className="h-60 md:h-80 overflow-x-auto">
+          <div className="min-w-[500px] h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
               <XAxis
                 dataKey="date"
@@ -249,6 +275,7 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
               <YAxis
                 className="text-xs text-gray-600 dark:text-gray-400"
                 tick={{ fill: 'currentColor' }}
+                domain={yAxisDomain}
                 tickFormatter={(value) => {
                   if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`
                   if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`
@@ -259,12 +286,12 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
               <Tooltip content={<CustomTooltip />} />
               <Legend />
 
-              {/* Total Line - Always visible */}
+              {/* Total Line - Color changes based on gain/loss */}
               <Line
                 type="monotone"
                 dataKey="total"
                 name="Total Value"
-                stroke="#1F2937"
+                stroke={lineColor}
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6 }}
@@ -288,6 +315,7 @@ export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolio
                 )}
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Summary Stats */}
