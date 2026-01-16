@@ -28,20 +28,24 @@ function getDateRange(range: DateRangeOption): { startDate?: string; endDate?: s
 }
 
 export function useCombinedHistory(
-  portfolioIds: number[],
+  portfolioIds?: number[],
   dateRange: DateRangeOption = '30d'
 ) {
+  const ids = portfolioIds ?? []
   return useQuery<CombinedPortfolioHistory>({
-    queryKey: ['combined-portfolio-history', portfolioIds.sort().join(','), dateRange],
+    queryKey: ['combined-portfolio-history', ids.slice().sort((a, b) => a - b).join(','), dateRange],
     queryFn: async () => {
+      if (ids.length === 0) {
+        throw new Error('No portfolios selected')
+      }
       if (dateRange === 'all') {
-        return await PortfolioAPI.getCombinedCompleteHistory(portfolioIds)
+        return await PortfolioAPI.getCombinedCompleteHistory(ids)
       } else {
         const { startDate, endDate } = getDateRange(dateRange)
-        return await PortfolioAPI.getCombinedHistory(portfolioIds, startDate, endDate)
+        return await PortfolioAPI.getCombinedHistory(ids, startDate, endDate)
       }
     },
-    enabled: portfolioIds.length > 0,
+    enabled: ids.length > 0,
     staleTime: 60000, // 1 minute
   })
 }

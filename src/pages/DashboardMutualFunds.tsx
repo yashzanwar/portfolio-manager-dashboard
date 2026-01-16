@@ -54,9 +54,7 @@ export default function DashboardMutualFunds() {
     selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
   )
   
-  const { data: historyData, isLoading: isHistoryLoading } = useCombinedHistory(
-    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
-  )
+  const { data: historyData, isLoading: isHistoryLoading } = useCombinedHistory(selectedPortfolioIds)
 
   // Check if user has selected portfolios
   const hasSelectedPortfolios = selectedPortfolioIds.length > 0
