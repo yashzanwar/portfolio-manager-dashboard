@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Repeat, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react'
 import { EmptyState } from '../components/common'
 import { ScheduleCard } from '../components/schedule/ScheduleCard'
-import { PortfolioSelector } from '../components/portfolio/PortfolioSelector'
+import { usePortfolioContext } from '../context/PortfolioContext'
 import { usePortfolios } from '../hooks/usePortfolios'
-import { Portfolio } from '../types/portfolio'
 import { Schedule, ScheduleType, ScheduleStatus, CashFlow } from '../types/schedule'
 import { ScheduleAPI } from '../services/scheduleApi'
 import toast from 'react-hot-toast'
@@ -13,8 +12,8 @@ import { formatCurrency } from '../utils/formatters'
 
 export default function Schedules() {
   const navigate = useNavigate()
+  const { selectedPortfolioIds } = usePortfolioContext()
   const { data: portfolios = [], isLoading: loadingPortfolios } = usePortfolios()
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null)
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(false)
   const [cashFlow, setCashFlow] = useState<CashFlow | null>(null)
@@ -24,22 +23,17 @@ export default function Schedules() {
   const [typeFilter, setTypeFilter] = useState<'ALL' | ScheduleType>('ALL')
   const [statusFilter, setStatusFilter] = useState<'ALL' | ScheduleStatus>('ALL')
 
-  // Select default portfolio
-  useEffect(() => {
-    if (portfolios.length > 0 && !selectedPortfolio) {
-      const primary = portfolios.find(p => p.isPrimary) || portfolios[0]
-      setSelectedPortfolio(primary)
-    }
-  }, [portfolios, selectedPortfolio])
-
   // Fetch schedules
   useEffect(() => {
-    if (!selectedPortfolio) return
+    if (selectedPortfolioIds.length === 0) {
+      setSchedules([])
+      return
+    }
 
     const fetchSchedules = async () => {
       setLoading(true)
       try {
-        const data = await ScheduleAPI.getSchedulesByPortfolio(selectedPortfolio.id)
+        const data = await ScheduleAPI.getSchedulesByPortfolios(selectedPortfolioIds)
         setSchedules(data)
       } catch (error: any) {
         console.error('Error fetching schedules:', error)
@@ -51,16 +45,19 @@ export default function Schedules() {
     }
 
     fetchSchedules()
-  }, [selectedPortfolio])
+  }, [selectedPortfolioIds])
 
   // Fetch cash flow
   useEffect(() => {
-    if (!selectedPortfolio) return
+    if (selectedPortfolioIds.length === 0) {
+      setCashFlow(null)
+      return
+    }
 
     const fetchCashFlow = async () => {
       setLoadingCashFlow(true)
       try {
-        const data = await ScheduleAPI.getCashFlow(selectedPortfolio.id)
+        const data = await ScheduleAPI.getCashFlowMultiple(selectedPortfolioIds)
         setCashFlow(data)
       } catch (error: any) {
         console.error('Error fetching cash flow:', error)
@@ -71,14 +68,30 @@ export default function Schedules() {
     }
 
     fetchCashFlow()
-  }, [selectedPortfolio])
+  }, [selectedPortfolioIds])
 
   // Filter schedules
   const filteredSchedules = useMemo(() => {
-    return schedules.filter(s => {
+    const filtered = schedules.filter(s => {
       const matchesType = typeFilter === 'ALL' || s.scheduleType === typeFilter
-      const matchesStatus = statusFilter === 'ALL' || s.status === statusFilter
+      const matchesStatus = statusFilter === 'ALL' 
+        ? s.status !== 'CANCELLED'  // Hide cancelled by default
+        : s.status === statusFilter
       return matchesType && matchesStatus
+    })
+
+    // Sort by next execution date (earliest first)
+    return filtered.sort((a, b) => {
+      // If both have next execution dates, sort by date
+      if (a.nextExecutionDate && b.nextExecutionDate) {
+        return new Date(a.nextExecutionDate).getTime() - new Date(b.nextExecutionDate).getTime()
+      }
+      // If only a has next execution date, it comes first
+      if (a.nextExecutionDate && !b.nextExecutionDate) return -1
+      // If only b has next execution date, it comes first
+      if (!a.nextExecutionDate && b.nextExecutionDate) return 1
+      // If neither has next execution date, maintain original order
+      return 0
     })
   }, [schedules, typeFilter, statusFilter])
 
@@ -92,10 +105,10 @@ export default function Schedules() {
 
   const handleScheduleUpdated = async () => {
     // Refresh schedules list and cash flow
-    if (selectedPortfolio) {
-      const data = await ScheduleAPI.getSchedulesByPortfolio(selectedPortfolio.id)
+    if (selectedPortfolioIds.length > 0) {
+      const data = await ScheduleAPI.getSchedulesByPortfolios(selectedPortfolioIds)
       setSchedules(data)
-      const cashFlowData = await ScheduleAPI.getCashFlow(selectedPortfolio.id)
+      const cashFlowData = await ScheduleAPI.getCashFlowMultiple(selectedPortfolioIds)
       setCashFlow(cashFlowData)
     }
   }
@@ -121,23 +134,17 @@ export default function Schedules() {
         </p>
       </div>
 
-      {/* Portfolio Selector */}
-      <div className="mb-6">
-        <PortfolioSelector
-          portfolios={portfolios}
-          selectedPortfolio={selectedPortfolio}
-          onSelectPortfolio={setSelectedPortfolio}
-          isLoading={loadingPortfolios}
-        />
-      </div>
-
       {/* Cash Flow Summary */}
-      {selectedPortfolio && (
+      {selectedPortfolioIds.length > 0 && (
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Monthly Cash Flow</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Your recurring investment commitment</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedPortfolioIds.length > 1 
+                  ? `Combined across ${selectedPortfolioIds.length} portfolios`
+                  : 'Your recurring investment commitment'}
+              </p>
             </div>
             <ArrowRightLeft className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
@@ -243,7 +250,7 @@ export default function Schedules() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as any)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 bor(except Cancelled)rder-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="ALL">All Status</option>
           <option value="ACTIVE">Active</option>
@@ -268,7 +275,9 @@ export default function Schedules() {
           title="No schedules found"
           description={
             schedules.length === 0
-              ? "Create your first SIP or SWP schedule to get started"
+              ? selectedPortfolioIds.length === 0
+                ? "Select a portfolio to view schedules"
+                : "Create your first SIP or SWP schedule to get started"
               : "No schedules match the selected filters"
           }
         />

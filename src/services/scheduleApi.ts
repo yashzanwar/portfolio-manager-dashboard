@@ -138,4 +138,40 @@ export const ScheduleAPI = {
       totalSwpSchedules: response.data.total_swp_schedules,
     }
   },
+
+  // Get schedules for multiple portfolios
+  async getSchedulesByPortfolios(portfolioIds: number[]): Promise<Schedule[]> {
+    if (portfolioIds.length === 0) return []
+    const idsParam = portfolioIds.join(',')
+    const response = await apiClient.get(`/schedules?portfolio_ids=${idsParam}`)
+    return response.data.map(transformSchedule)
+  },
+
+  // Get combined cash flow for multiple portfolios
+  async getCashFlowMultiple(portfolioIds: number[]): Promise<CashFlow> {
+    if (portfolioIds.length === 0) {
+      return {
+        monthlyInflow: 0,
+        monthlyOutflow: 0,
+        monthlyNetFlow: 0,
+        quarterlyInflow: 0,
+        quarterlyOutflow: 0,
+        quarterlyNetFlow: 0,
+        totalSipSchedules: 0,
+        totalSwpSchedules: 0,
+      }
+    }
+    const idsParam = portfolioIds.join(',')
+    const response = await apiClient.get(`/schedules/cashflow?portfolio_ids=${idsParam}`)
+    return {
+      monthlyInflow: response.data.monthly_inflow,
+      monthlyOutflow: response.data.monthly_outflow,
+      monthlyNetFlow: response.data.monthly_net_flow,
+      quarterlyInflow: response.data.quarterly_inflow,
+      quarterlyOutflow: response.data.quarterly_outflow,
+      quarterlyNetFlow: response.data.quarterly_net_flow,
+      totalSipSchedules: response.data.total_sip_schedules,
+      totalSwpSchedules: response.data.total_swp_schedules,
+    }
+  },
 }

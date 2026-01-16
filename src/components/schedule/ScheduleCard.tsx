@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Calendar, TrendingUp, TrendingDown, Pause, Play, X, ChevronRight } from 'lucide-react'
+import { Calendar, TrendingUp, TrendingDown, Pause, Play, X, Edit } from 'lucide-react'
 import { Schedule } from '../../types/schedule'
 import { ScheduleAPI } from '../../services/scheduleApi'
-import { Button } from '../common'
+import { Button, Modal, Input } from '../common'
 import { formatCurrency, formatDate } from '../../utils/formatters'
 import toast from 'react-hot-toast'
 
@@ -13,6 +13,12 @@ interface ScheduleCardProps {
 
 export function ScheduleCard({ schedule, onUpdate }: ScheduleCardProps) {
   const [loading, setLoading] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    amount: schedule.amount,
+    end_date: schedule.endDate || '',
+    day_of_execution: schedule.dayOfExecution,
+  })
 
   const isSIP = schedule.scheduleType === 'SIP'
   const isActive = schedule.status === 'ACTIVE'
@@ -54,6 +60,47 @@ export function ScheduleCard({ schedule, onUpdate }: ScheduleCardProps) {
       onUpdate()
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel schedule')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = () => {
+    setEditForm({
+      amount: schedule.amount,
+      end_date: schedule.endDate || '',
+      day_of_execution: schedule.dayOfExecution,
+    })
+    setShowEditModal(true)
+  }
+
+  const handleUpdate = async () => {
+    setLoading(true)
+    try {
+      const updateData: any = {}
+      
+      // Only send changed fields
+      if (editForm.amount !== schedule.amount) {
+        updateData.amount = editForm.amount
+      }
+      if (editForm.end_date !== (schedule.endDate || '')) {
+        updateData.end_date = editForm.end_date || null
+      }
+      if (editForm.day_of_execution !== schedule.dayOfExecution) {
+        updateData.day_of_execution = editForm.day_of_execution
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        toast.error('No changes to update')
+        return
+      }
+
+      await ScheduleAPI.updateSchedule(schedule.id, updateData)
+      toast.success('Schedule updated successfully')
+      setShowEditModal(false)
+      onUpdate()
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update schedule')
     } finally {
       setLoading(false)
     }
@@ -159,6 +206,18 @@ export function ScheduleCard({ schedule, onUpdate }: ScheduleCardProps) {
       {/* Actions */}
       <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
         <div className="flex gap-2">
+          {(isActive || isPaused) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEdit}
+              disabled={loading}
+              className="flex-1"
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+          )}
           {isActive && (
             <Button
               variant="ghost"
@@ -195,16 +254,82 @@ export function ScheduleCard({ schedule, onUpdate }: ScheduleCardProps) {
               Cancel
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toast('Schedule details coming soon!')}
-            className="ml-auto"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Schedule"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Amount
+            </label>
+            <Input
+              type="number"
+              value={editForm.amount}
+              onChange={(e) => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })}
+              min="1"
+              step="100"
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Day of Execution (1-28)
+            </label>
+            <Input
+              type="number"
+              value={editForm.day_of_execution}
+              onChange={(e) => setEditForm({ ...editForm, day_of_execution: parseInt(e.target.value) || 1 })}
+              min="1"
+              max="28"
+              placeholder="Day of month"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              The day of the month when the schedule will execute
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              End Date (Optional)
+            </label>
+            <Input
+              type="date"
+              value={editForm.end_date}
+              onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+              min={new Date().toISOString().split('T')[0]}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Leave empty for indefinite schedule
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setShowEditModal(false)}
+              disabled={loading}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleUpdate}
+              disabled={loading}
+              className="flex-1"
+            >
+              {loading ? 'Updating...' : 'Update Schedule'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
