@@ -18,18 +18,22 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedPortfolioIds, setSelectedPortfolioIds] = useState<number[]>(() => {
     // Priority: URL params > localStorage > empty array
-    const urlIds = searchParams.get('portfolios')
-    if (urlIds) {
-      return urlIds.split(',').map(Number).filter(n => !isNaN(n))
+    try {
+      const urlIds = searchParams.get('portfolios')
+      if (urlIds) {
+        return urlIds.split(',').map(Number).filter(n => !isNaN(n))
+      }
+    } catch (e) {
+      // searchParams might fail in some contexts
     }
     
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
         return JSON.parse(stored)
-      } catch {
-        return []
       }
+    } catch {
+      // localStorage might be blocked in incognito
     }
     
     return []
@@ -37,25 +41,40 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
   // Sync to localStorage and URL
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedPortfolioIds))
+    // Try to save to localStorage, but don't fail if it's blocked (incognito mode)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedPortfolioIds))
+    } catch (error) {
+      // Silent fail in incognito
+    }
+    
+    // Skip URL update completely if we're on auth pages or root
+    const path = window.location.pathname
+    if (path === '/' || path.startsWith('/login') || path.startsWith('/register')) {
+      return
+    }
     
     // Update URL params without triggering re-render loop
-    setSearchParams(prev => {
-      const newParams = new URLSearchParams(prev)
-      if (selectedPortfolioIds.length > 0) {
-        newParams.set('portfolios', selectedPortfolioIds.join(','))
-      } else {
-        newParams.delete('portfolios')
-      }
-      
-      // Only update if changed
-      const currentPortfolios = prev.get('portfolios')
-      const newPortfolios = newParams.get('portfolios')
-      if (currentPortfolios !== newPortfolios) {
-        return newParams
-      }
-      return prev
-    }, { replace: true })
+    try {
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev)
+        if (selectedPortfolioIds.length > 0) {
+          newParams.set('portfolios', selectedPortfolioIds.join(','))
+        } else {
+          newParams.delete('portfolios')
+        }
+        
+        // Only update if changed
+        const currentPortfolios = prev.get('portfolios')
+        const newPortfolios = newParams.get('portfolios')
+        if (currentPortfolios !== newPortfolios) {
+          return newParams
+        }
+        return prev
+      }, { replace: true })
+    } catch (e) {
+      // setSearchParams might fail
+    }
   }, [selectedPortfolioIds, setSearchParams])
 
   const togglePortfolio = (id: number) => {

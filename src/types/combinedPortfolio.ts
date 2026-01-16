@@ -50,6 +50,7 @@ export interface PortfolioBreakdown {
 }
 
 export interface CombinedFundDetail {
+  scheme_id: number
   isin: string
   scheme_name: string
   amc: string

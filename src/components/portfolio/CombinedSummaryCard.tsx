@@ -1,5 +1,5 @@
 import React from 'react'
-import { TrendingUp, TrendingDown, Briefcase, DollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown, Briefcase, DollarSign, Target } from 'lucide-react'
 import { Card } from '../common'
 import { CombinedOverallSummary } from '../../types/combinedPortfolio'
 import { formatCurrency, formatPercentage } from '../../utils/formatters'
@@ -8,10 +8,11 @@ interface CombinedSummaryCardProps {
   summary: CombinedOverallSummary
   portfolioCount: number
   mode: 'single' | 'combined'
+  xirr?: number
 }
 
-export function CombinedSummaryCard({ summary, portfolioCount, mode }: CombinedSummaryCardProps) {
-  console.log('CombinedSummaryCard received:', { summary, portfolioCount, mode })
+export function CombinedSummaryCard({ summary, portfolioCount, mode, xirr }: CombinedSummaryCardProps) {
+  console.log('CombinedSummaryCard received:', { summary, portfolioCount, mode, xirr })
   
   const isPositive = (summary.total_profit_loss || 0) >= 0
 
@@ -34,7 +35,7 @@ export function CombinedSummaryCard({ summary, portfolioCount, mode }: CombinedS
         </div>
 
         {/* Main Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
           {/* Current Value */}
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Current Value</p>
@@ -81,6 +82,22 @@ export function CombinedSummaryCard({ summary, portfolioCount, mode }: CombinedS
               {formatPercentage(summary.unrealized_profit_loss_percentage || 0)}
             </p>
           </div>
+
+          {/* XIRR */}
+          {xirr !== undefined && (
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">XIRR</p>
+              <div className="flex items-center gap-2">
+                <p className={`text-2xl font-bold ${xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {xirr >= 0 ? '+' : ''}{xirr.toFixed(2)}%
+                </p>
+                <Target className={`w-5 h-5 ${xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
+              </div>
+              <p className="text-sm font-medium mt-1 text-gray-600 dark:text-gray-400">
+                Annualized
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Additional Info */}

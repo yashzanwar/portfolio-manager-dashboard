@@ -9,6 +9,7 @@ import { usePortfolios } from '../hooks/usePortfolios'
 import { usePortfolioContext } from '../context/PortfolioContext'
 import { useCombinedPortfolio } from '../hooks/useCombinedPortfolio'
 import { useCombinedHistory } from '../hooks/useCombinedHistory'
+import { useMultipleSchemeXIRR, usePortfolioXIRR } from '../hooks/useXIRR'
 import { CombinedSummaryCard } from '../components/portfolio/CombinedSummaryCard'
 import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfolioChart'
 import { PortfolioBreakdownTable } from '../components/portfolio/PortfolioBreakdownTable'
@@ -173,6 +174,7 @@ export default function DashboardMutualFunds() {
           } else {
             // Add new fund
             allFunds.push({
+              scheme_id: fund.scheme_id || fund.schemeId,
               isin: fund.isin,
               schemeName: fund.scheme_name || fund.schemeName,
               amc: fund.amc,
@@ -296,6 +298,36 @@ export default function DashboardMutualFunds() {
     })
   }, [combinedSummary, searchTerm, schemeTypeFilter, amcFilter, sortBy, sortOrder])
 
+  // Fetch XIRR for all visible schemes
+  const schemeIds = useMemo(() => {
+    return filteredAndSortedHoldings
+      .map((fund: any) => fund.scheme_id)
+      .filter((id): id is number => id != null)
+  }, [filteredAndSortedHoldings])
+
+  const { data: xirrData } = useMultipleSchemeXIRR(
+    schemeIds,
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+
+  // Fetch portfolio-level XIRR for summary card
+  const { data: portfolioXirrData } = usePortfolioXIRR(
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+
+  // Create a map of scheme_id to XIRR for quick lookup
+  const xirrMap = useMemo(() => {
+    const map = new Map<number, number>()
+    if (xirrData) {
+      xirrData.forEach(item => {
+        if (item.xirr != null) {
+          map.set(item.schemeId, item.xirr)
+        }
+      })
+    }
+    return map
+  }, [xirrData])
+
   const handleSort = (key: typeof sortBy) => {
     if (sortBy === key) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -416,6 +448,7 @@ export default function DashboardMutualFunds() {
               summary={summaryData.overall}
               portfolioCount={summaryData.portfolio_count}
               mode={summaryData.mode}
+              xirr={portfolioXirrData?.xirr}
             />
           )}
 
@@ -514,8 +547,6 @@ export default function DashboardMutualFunds() {
                       {sortBy === 'scheme' && (sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ISIN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Folios</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Units</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => handleSort('invested')}>
                     <div className="flex items-center justify-end gap-2">
@@ -535,11 +566,8 @@ export default function DashboardMutualFunds() {
                       {sortBy === 'pl' && (sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => handleSort('returns')}>
-                    <div className="flex items-center justify-end gap-2">
-                      Returns
-                      {sortBy === 'returns' && (sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
-                    </div>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    XIRR
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -554,16 +582,20 @@ export default function DashboardMutualFunds() {
                           <div className="text-sm text-gray-500 dark:text-gray-400">{fund.amc}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{fund.isin}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{fund.folios.length}</td>
                       <td className="px-6 py-4 text-sm text-right text-gray-900 dark:text-white font-mono">{formatNumber(fund.currentUnits)}</td>
                       <td className="px-6 py-4 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(fund.totalInvested)}</td>
                       <td className="px-6 py-4 text-sm text-right text-gray-900 dark:text-white font-mono">{formatCurrency(fund.currentValue)}</td>
                       <td className={`px-6 py-4 text-sm text-right font-mono font-medium ${fund.totalProfitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {formatCurrency(fund.totalProfitLoss)}
                       </td>
-                      <td className={`px-6 py-4 text-sm text-right font-mono font-medium ${fund.plPercentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {formatPercentage(fund.plPercentage)}
+                      <td className="px-6 py-4 text-sm text-right font-mono">
+                        {fund.scheme_id && xirrMap.has(fund.scheme_id) ? (
+                          <span className={`font-medium ${xirrMap.get(fund.scheme_id)! >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {formatPercentage(xirrMap.get(fund.scheme_id)!)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button

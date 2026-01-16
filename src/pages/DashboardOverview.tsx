@@ -1,6 +1,7 @@
 import { usePortfolioContext } from '../context/PortfolioContext'
 import { useAssetFilter } from '../context/AssetFilterContext'
 import { useCombinedPortfolio } from '../hooks/useCombinedPortfolio'
+import { usePortfolioXIRR } from '../hooks/useXIRR'
 import { AssetTypeFilter } from '../components/dashboard/AssetTypeFilter'
 import { TotalValueSummary } from '../components/dashboard/TotalValueSummary'
 import { AssetAllocationChart } from '../components/dashboard/AssetAllocationChart'
@@ -16,6 +17,11 @@ export default function DashboardOverview() {
     selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
   )
 
+  // Fetch XIRR data
+  const { data: xirrData, isLoading: isXIRRLoading } = usePortfolioXIRR(
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+
   // Check if user has selected portfolios
   const hasSelectedPortfolios = selectedPortfolioIds.length > 0
 
@@ -24,6 +30,7 @@ export default function DashboardOverview() {
   const totalInvested = summaryData?.overall.total_invested || 0
   const totalGain = summaryData?.overall.unrealized_profit_loss || 0
   const totalGainPercent = summaryData?.overall.unrealized_profit_loss_percentage || 0
+  const xirr = xirrData?.xirr
 
   return (
     <div className="space-y-6">
@@ -65,6 +72,7 @@ export default function DashboardOverview() {
         totalInvested={totalInvested}
         totalGain={totalGain}
         totalGainPercent={totalGainPercent}
+        xirr={xirr}
         isLoading={isLoading && hasSelectedPortfolios}
       />
 

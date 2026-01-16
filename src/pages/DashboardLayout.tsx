@@ -28,7 +28,7 @@ export default function DashboardLayout() {
     }
   }, [isMobileSidebarOpen])
 
-  // Wait for hydration before checking auth
+  // Wait for hydration before making any routing decisions
   if (!hasHydrated) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
@@ -40,7 +40,7 @@ export default function DashboardLayout() {
     )
   }
 
-  // Redirect to login if not authenticated
+  // After hydration, redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }

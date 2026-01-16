@@ -1,5 +1,29 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
+
+const safeStorage = {
+  getItem: (name: string) => {
+    try {
+      return globalThis.localStorage?.getItem(name) ?? null
+    } catch {
+      return null
+    }
+  },
+  setItem: (name: string, value: string) => {
+    try {
+      globalThis.localStorage?.setItem(name, value)
+    } catch {
+      // Ignore storage failures (e.g. incognito restrictions)
+    }
+  },
+  removeItem: (name: string) => {
+    try {
+      globalThis.localStorage?.removeItem(name)
+    } catch {
+      // Ignore storage failures
+    }
+  },
+}
 
 interface User {
   userId: number
@@ -50,17 +74,19 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.setHasHydrated(true)
-        }
-      },
     }
   )
 )
+
+// Immediately mark as hydrated after store initialization
+// This prevents infinite loading in incognito mode
+setTimeout(() => {
+  useAuthStore.setState({ _hasHydrated: true })
+}, 0)

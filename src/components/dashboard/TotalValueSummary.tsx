@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Percent } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Percent, Target } from 'lucide-react'
 
 interface SummaryStat {
   label: string
@@ -15,6 +15,7 @@ interface TotalValueSummaryProps {
   totalInvested?: number
   totalGain?: number
   totalGainPercent?: number
+  xirr?: number
   isLoading?: boolean
 }
 
@@ -23,6 +24,7 @@ export function TotalValueSummary({
   totalInvested = 0,
   totalGain = 0,
   totalGainPercent = 0,
+  xirr,
   isLoading = false
 }: TotalValueSummaryProps) {
   const formatCurrency = (amount: number) => {
@@ -55,16 +57,20 @@ export function TotalValueSummary({
       icon: totalGain >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />,
       iconBg: totalGain >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30',
       iconColor: totalGain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-    },
-    {
-      label: 'Returns',
-      value: `${totalGainPercent >= 0 ? '+' : ''}${totalGainPercent.toFixed(2)}%`,
-      changeType: totalGainPercent > 0 ? 'increase' : totalGainPercent < 0 ? 'decrease' : 'neutral',
-      icon: <Percent className="w-6 h-6" />,
-      iconBg: totalGainPercent >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30',
-      iconColor: totalGainPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
     }
   ]
+
+  // Add XIRR stat if available
+  if (xirr !== undefined) {
+    stats.push({
+      label: 'XIRR (Annualized)',
+      value: `${xirr >= 0 ? '+' : ''}${xirr.toFixed(2)}%`,
+      changeType: xirr > 0 ? 'increase' : xirr < 0 ? 'decrease' : 'neutral',
+      icon: <Target className="w-6 h-6" />,
+      iconBg: xirr >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30',
+      iconColor: xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+    })
+  }
 
   if (isLoading) {
     return (
