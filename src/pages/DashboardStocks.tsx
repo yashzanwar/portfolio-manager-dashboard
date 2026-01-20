@@ -46,19 +46,19 @@ export default function DashboardStocks() {
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'P&L',
+          header: 'P&L / XIRR',
           key: 'totalProfitLoss',
           align: 'center',
           format: (value, holding) => {
-            const percentage = holding.totalProfitLossPercentage ?? holding.total_profit_loss_percentage ?? 0
+            const xirr = holding.xirr ?? 0
             return (
               <div className="text-center">
                 <div className={`font-medium ${value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(value)}
                 </div>
-                <div className={`text-xs flex items-center justify-center gap-1 ${percentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {percentage >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {formatPercentage(percentage)}
+                <div className={`text-xs flex items-center justify-center gap-1 ${xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {xirr >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {formatPercentage(xirr)}
                 </div>
               </div>
             )

@@ -9,7 +9,7 @@ import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfoli
 import { usePortfolioContext } from '../context/PortfolioContext'
 import { usePortfolios } from '../hooks/usePortfolios'
 import { usePortfolioSummaryV2 } from '../hooks/usePortfolioV2'
-import { usePortfolioXIRR } from '../hooks/useXIRR'
+import { usePortfolioXIRR, useMultipleSchemeXIRR } from '../hooks/useXIRR'
 import { formatCurrency, formatPercentage } from '../utils/formatters'
 
 type AssetType = 'EQUITY_STOCK' | 'MUTUAL_FUND'
@@ -170,8 +170,31 @@ export default function DashboardHoldings({
     ? (summaryV2?.holdings?.stocks || [])
     : (summaryV2?.holdings?.mutual_funds || [])
 
+  // Extract scheme IDs for XIRR fetching
+  const schemeIds = holdings.map((h: any) => h.scheme_id).filter((id: any) => id != null)
+
+  // Fetch XIRR data for all schemes
+  const { data: schemeXIRRData } = useMultipleSchemeXIRR(
+    schemeIds,
+    selectedPortfolioIds.length > 0 ? selectedPortfolioIds : undefined
+  )
+
+  // Create XIRR lookup map
+  const xirrMap = new Map<number, number>()
+  if (schemeXIRRData) {
+    schemeXIRRData.forEach(xirr => {
+      if (xirr.schemeId && xirr.xirr != null) {
+        xirrMap.set(xirr.schemeId, xirr.xirr)
+      }
+    })
+  }
+
   // Aggregate and filter holdings
-  const aggregatedHoldings = aggregateHoldings(holdings)
+  const aggregatedHoldings = aggregateHoldings(holdings).map(holding => ({
+    ...holding,
+    xirr: holding.holdings[0]?.scheme_id ? xirrMap.get(holding.holdings[0].scheme_id) : undefined
+  }))
+  
   const filteredHoldings = aggregatedHoldings.filter(holding =>
     holding.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     holding.subtitle.toLowerCase().includes(searchTerm.toLowerCase())
