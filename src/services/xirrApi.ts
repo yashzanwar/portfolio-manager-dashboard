@@ -21,13 +21,20 @@ export const XIRRApi = {
    */
   getConsolidatedXIRR: async (
     portfolioIds: number[],
-    includeCurrentValue: boolean = true
+    includeCurrentValue: boolean = true,
+    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
   ): Promise<XIRRResponse> => {
+    const params: Record<string, string> = {
+      portfolioIds: portfolioIds.join(','),
+      includeCurrentValue: String(includeCurrentValue)
+    }
+    
+    if (assetType) {
+      params.assetType = assetType
+    }
+    
     const response = await apiClient.get('/portfolios/xirr/consolidated', {
-      params: {
-        portfolioIds: portfolioIds.join(','),
-        includeCurrentValue
-      }
+      params
     })
     return response.data
   },

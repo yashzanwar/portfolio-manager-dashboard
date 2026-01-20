@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { AssetTypeBreakdownV2 } from '../../types/portfolioV2'
 
 interface AllocationData {
   name: string
@@ -7,29 +8,40 @@ interface AllocationData {
 }
 
 interface AssetAllocationChartProps {
-  data?: AllocationData[]
+  breakdown?: Record<string, AssetTypeBreakdownV2>
   isLoading?: boolean
 }
 
-const COLORS = {
-  'mutual-funds': '#3B82F6',  // blue
-  'stocks': '#8B5CF6',         // purple
-  'crypto': '#F97316',         // orange
-  'gold': '#EAB308',           // yellow
-  'property': '#10B981',       // green
-  'fixed-income': '#6366F1'    // indigo
+const COLORS: Record<string, string> = {
+  'MUTUAL_FUND': '#3B82F6',    // blue
+  'EQUITY_STOCK': '#8B5CF6',   // purple
+  'CRYPTOCURRENCY': '#F97316', // orange
+  'GOLD_PHYSICAL': '#EAB308',  // yellow
+  'REAL_ESTATE': '#10B981',    // green
+  'FIXED_DEPOSIT': '#6366F1'   // indigo
 }
 
-const DEFAULT_DATA: AllocationData[] = [
-  { name: 'Mutual Funds', value: 45, color: COLORS['mutual-funds'] },
-  { name: 'Stocks', value: 25, color: COLORS['stocks'] },
-  { name: 'Crypto', value: 10, color: COLORS['crypto'] },
-  { name: 'Gold', value: 8, color: COLORS['gold'] },
-  { name: 'Property', value: 7, color: COLORS['property'] },
-  { name: 'Fixed Income', value: 5, color: COLORS['fixed-income'] }
-]
+const ASSET_LABELS: Record<string, string> = {
+  'MUTUAL_FUND': 'Mutual Funds',
+  'EQUITY_STOCK': 'Stocks',
+  'CRYPTOCURRENCY': 'Crypto',
+  'GOLD_PHYSICAL': 'Gold',
+  'REAL_ESTATE': 'Property',
+  'FIXED_DEPOSIT': 'Fixed Income'
+}
 
-export function AssetAllocationChart({ data = DEFAULT_DATA, isLoading = false }: AssetAllocationChartProps) {
+export function AssetAllocationChart({ breakdown, isLoading = false }: AssetAllocationChartProps) {
+  // Transform breakdown into chart data
+  const data: AllocationData[] = breakdown
+    ? Object.entries(breakdown)
+        .map(([assetType, data]) => ({
+          name: ASSET_LABELS[assetType] || assetType,
+          value: data.current_value,
+          color: COLORS[assetType] || '#6B7280' // gray fallback
+        }))
+        .filter(item => item.value > 0) // Filter out 0 value assets
+    : []
+
   const formatCurrency = (value: number) => {
     if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`
     if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`
@@ -49,7 +61,7 @@ export function AssetAllocationChart({ data = DEFAULT_DATA, isLoading = false }:
             {formatCurrency(data.value)}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {data.payload.percent}% of total
+            {data.payload.percentage}% of total
           </p>
         </div>
       )
@@ -78,11 +90,11 @@ export function AssetAllocationChart({ data = DEFAULT_DATA, isLoading = false }:
     )
   }
 
-  // Calculate total and add percent to each item
+  // Calculate total and add percentage to each item
   const total = data.reduce((sum, item) => sum + item.value, 0)
   const dataWithPercent = data.map(item => ({
     ...item,
-    percent: ((item.value / total) * 100).toFixed(1)
+    percentage: ((item.value / total) * 100).toFixed(1) // renamed to avoid conflict with Recharts' percent prop
   }))
 
   if (isLoading) {
@@ -93,6 +105,19 @@ export function AssetAllocationChart({ data = DEFAULT_DATA, isLoading = false }:
         </h3>
         <div className="h-60 md:h-80 flex items-center justify-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Asset Allocation
+        </h3>
+        <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
+          <p className="text-sm">No asset data available</p>
         </div>
       </div>
     )
@@ -126,7 +151,7 @@ export function AssetAllocationChart({ data = DEFAULT_DATA, isLoading = false }:
             height={36}
             formatter={(value, entry: any) => (
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                {value} ({entry.payload.percent}%)
+                {value} ({entry.payload.percentage}%)
               </span>
             )}
           />

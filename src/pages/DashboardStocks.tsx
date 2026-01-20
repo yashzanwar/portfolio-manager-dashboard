@@ -2,34 +2,34 @@ import DashboardHoldings from './DashboardHoldings'
 import { formatCurrency, formatNumber, formatPercentage } from '../utils/formatters'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
-export default function DashboardMutualFunds() {
+export default function DashboardStocks() {
   return (
     <DashboardHoldings
-      assetType="MUTUAL_FUND"
-      title="Mutual Fund Holdings"
-      emptyMessage="No mutual funds found. Add your first mutual fund transaction to get started."
-      showChart={true}
+      assetType="EQUITY_STOCK"
+      title="Stock Holdings"
+      emptyMessage="No stocks found. Add your first stock transaction to get started."
+      showChart={false}
       columns={[
         {
-          header: 'Scheme',
+          header: 'Stock',
           key: 'displayName',
           align: 'left'
         },
         {
-          header: 'Units',
-          key: 'current_units',
+          header: 'Shares',
+          key: 'quantity',
           align: 'center',
-          format: (value) => formatNumber(value, 3)
+          format: (value) => formatNumber(value)
         },
         {
-          header: 'Avg NAV',
-          key: 'average_nav',
+          header: 'Avg Buy Price',
+          key: 'average_price',
           align: 'center',
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current NAV',
-          key: 'current_nav',
+          header: 'Current Price',
+          key: 'current_price',
           align: 'center',
           format: (value) => formatCurrency(value)
         },
@@ -70,9 +70,9 @@ export default function DashboardMutualFunds() {
           align: 'center'
         }
       ]}
-      getIdentifier={(holding) => holding.isin}
-      getDisplayName={(holding) => holding.scheme_name}
-      getSubtitle={(holding) => `${holding.folio_number} • ${holding.amc}`}
+      getIdentifier={(holding) => holding.isin || holding.symbol}
+      getDisplayName={(holding) => holding.company_name}
+      getSubtitle={(holding) => `${holding.symbol} • ${holding.isin || holding.exchange}`}
     />
   )
 }

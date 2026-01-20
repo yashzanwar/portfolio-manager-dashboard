@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, Loader2, Calendar, DollarSign, Hash } from 'lucide-react'
+import { Search, Loader2, Calendar, DollarSign, Hash, TrendingUp, Coins } from 'lucide-react'
 import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
@@ -13,6 +13,7 @@ interface Scheme {
   amc: string
   schemeType: string
   schemeCode: string
+  assetType?: string
 }
 
 interface AddTransactionModalProps {
@@ -22,9 +23,14 @@ interface AddTransactionModalProps {
   onSuccess: () => void
   prefilledScheme?: Scheme
   prefilledFolioNumber?: string
+  initialAssetType?: AssetType
+  hideAssetTypeSelector?: boolean // Hide selector when asset type is pre-selected
 }
 
-type TransactionType = 'PURCHASE' | 'REDEMPTION' | 'PURCHASE_SIP' | 'REDEMPTION_SWP'
+type AssetType = 'MUTUAL_FUND' | 'STOCK'
+type MFTransactionType = 'PURCHASE' | 'REDEMPTION' | 'PURCHASE_SIP' | 'REDEMPTION_SWP'
+type StockTransactionType = 'STOCK_BUY' | 'STOCK_SELL'
+type TransactionType = MFTransactionType | StockTransactionType
 type InputMode = 'amount' | 'units'
 
 export function AddTransactionModal({
@@ -33,8 +39,13 @@ export function AddTransactionModal({
   portfolioId,
   onSuccess,
   prefilledScheme,
-  prefilledFolioNumber
+  prefilledFolioNumber,
+  initialAssetType = 'MUTUAL_FUND',
+  hideAssetTypeSelector = false
 }: AddTransactionModalProps) {
+  // Asset type selection
+  const [assetType, setAssetType] = useState<AssetType>(initialAssetType)
+  
   // Form state
   const [searchQuery, setSearchQuery] = useState('')
   const [schemes, setSchemes] = useState<Scheme[]>([])
@@ -46,6 +57,8 @@ export function AddTransactionModal({
   const [inputMode, setInputMode] = useState<InputMode>('amount')
   const [amount, setAmount] = useState('')
   const [units, setUnits] = useState('')
+  const [pricePerShare, setPricePerShare] = useState('')
+  const [brokerage, setBrokerage] = useState('')
   const [description, setDescription] = useState('')
 
   // Schedule-specific state (for SIP/SWP)
@@ -77,6 +90,11 @@ export function AddTransactionModal({
       if (prefilledScheme && !selectedScheme) {
         setSelectedScheme(prefilledScheme)
         setSearchQuery(prefilledScheme.schemeName)
+        // Set asset type based on prefilled scheme
+        if (prefilledScheme.assetType === 'EQUITY_STOCK') {
+          setAssetType('STOCK')
+          setTransactionType('STOCK_BUY')
+        }
       }
       
       // Pre-populate folio number if provided
@@ -85,6 +103,23 @@ export function AddTransactionModal({
       }
     }
   }, [isOpen, transactionDate, prefilledScheme, prefilledFolioNumber, selectedScheme, folioNumber])
+  
+  // Update transaction type when asset type changes
+  useEffect(() => {
+    if (assetType === 'STOCK') {
+      setTransactionType('STOCK_BUY')
+      setInputMode('units')
+    } else {
+      setTransactionType('PURCHASE')
+      setInputMode('amount')
+    }
+    // Reset fields when switching asset types
+    setSelectedScheme(null)
+    setSearchQuery('')
+    setPricePerShare('')
+    setBrokerage('')
+    setNav(null)
+  }, [assetType])
 
   // Search schemes with debounce
   const debounceTimeout = useRef<ReturnType<typeof setTimeout>>()
@@ -105,9 +140,15 @@ export function AddTransactionModal({
     debounceTimeout.current = setTimeout(async () => {
       setSearchingSchemes(true)
       try {
-        const response = await apiClient.get<Scheme[]>('/schemes', {
-          params: { search: searchQuery }
-        })
+        const params: any = { search: searchQuery }
+        // Filter by asset type
+        if (assetType === 'STOCK') {
+          params.assetType = 'EQUITY_STOCK'
+        } else {
+          params.assetType = 'MUTUAL_FUND'
+        }
+        
+        const response = await apiClient.get<Scheme[]>('/schemes', { params })
         setSchemes(response.data)
         setShowDropdown(true)
       } catch (error: any) {
@@ -126,9 +167,9 @@ export function AddTransactionModal({
     }
   }, [searchQuery])
 
-  // Fetch NAV when scheme and date are selected
+  // Fetch NAV when scheme and date are selected (only for mutual funds)
   useEffect(() => {
-    if (!selectedScheme || !transactionDate) {
+    if (assetType === 'STOCK' || !selectedScheme || !transactionDate) {
       setNav(null)
       setNavDate(null)
       return
@@ -159,27 +200,44 @@ export function AddTransactionModal({
     fetchNav()
   }, [selectedScheme, transactionDate])
 
-  // Calculate amount/units based on NAV
+  // Calculate amount/units based on NAV (for mutual funds) or price (for stocks)
   useEffect(() => {
-    if (!nav) {
-      setCalculatedValue(null)
-      return
-    }
+    if (assetType === 'STOCK') {
+      // For stocks: calculate total amount from units and price per share
+      if (units && pricePerShare) {
+        const unitsValue = Number.parseFloat(units)
+        const priceValue = Number.parseFloat(pricePerShare)
+        const brokerageValue = brokerage ? Number.parseFloat(brokerage) : 0
+        
+        if (!Number.isNaN(unitsValue) && !Number.isNaN(priceValue)) {
+          const calculatedAmount = (unitsValue * priceValue) + brokerageValue
+          setCalculatedValue(calculatedAmount)
+        }
+      } else {
+        setCalculatedValue(null)
+      }
+    } else {
+      // For mutual funds: use NAV-based calculation
+      if (!nav) {
+        setCalculatedValue(null)
+        return
+      }
 
-    if (inputMode === 'amount' && amount) {
-      const amountValue = Number.parseFloat(amount)
-      if (!Number.isNaN(amountValue)) {
-        const calculatedUnits = amountValue / nav
-        setCalculatedValue(calculatedUnits)
-      }
-    } else if (inputMode === 'units' && units) {
-      const unitsValue = Number.parseFloat(units)
-      if (!Number.isNaN(unitsValue)) {
-        const calculatedAmount = unitsValue * nav
-        setCalculatedValue(calculatedAmount)
+      if (inputMode === 'amount' && amount) {
+        const amountValue = Number.parseFloat(amount)
+        if (!Number.isNaN(amountValue)) {
+          const calculatedUnits = amountValue / nav
+          setCalculatedValue(calculatedUnits)
+        }
+      } else if (inputMode === 'units' && units) {
+        const unitsValue = Number.parseFloat(units)
+        if (!Number.isNaN(unitsValue)) {
+          const calculatedAmount = unitsValue * nav
+          setCalculatedValue(calculatedAmount)
+        }
       }
     }
-  }, [nav, inputMode, amount, units])
+  }, [assetType, nav, inputMode, amount, units, pricePerShare, brokerage])
 
   const handleSchemeSelect = (scheme: Scheme) => {
     setSelectedScheme(scheme)
@@ -195,11 +253,60 @@ export function AddTransactionModal({
       toast.error('Please select a scheme')
       return
     }
-    if (!folioNumber.trim()) {
+    
+    // Folio number validation - only for mutual funds
+    if (assetType === 'MUTUAL_FUND' && !folioNumber.trim()) {
       toast.error('Please enter folio number')
       return
     }
 
+    // Stock transaction validation
+    if (assetType === 'STOCK') {
+      if (!transactionDate) {
+        toast.error('Please select transaction date')
+        return
+      }
+      if (!units) {
+        toast.error('Please enter number of shares')
+        return
+      }
+      if (!pricePerShare) {
+        toast.error('Please enter price per share')
+        return
+      }
+      
+      setSubmitting(true)
+      try {
+        const payload = {
+          isin: selectedScheme.isin,
+          folioNumber: folioNumber.trim() || 'STOCK', // Use default for stocks
+          transactionDate,
+          transactionType, // STOCK_BUY or STOCK_SELL
+          units: Number.parseFloat(units),
+          pricePerShare: Number.parseFloat(pricePerShare),
+          amount: Number.parseFloat(units) * Number.parseFloat(pricePerShare),
+          brokerage: brokerage ? Number.parseFloat(brokerage) : undefined,
+          description: description.trim() || undefined
+        }
+
+        await apiClient.post(`/portfolios/${portfolioId}/stocks/transactions`, payload)
+        
+        const typeLabel = transactionType === 'STOCK_BUY' ? 'Buy' : 'Sell'
+        toast.success(`Stock ${typeLabel} transaction added successfully`)
+        
+        onSuccess()
+        handleClose()
+      } catch (error: any) {
+        console.error('Error:', error)
+        const message = error.response?.data?.message || 'Failed to add stock transaction'
+        toast.error(message)
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
+    // Mutual fund validation (existing code)
     const isSchedule = transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP'
 
     // Validation for one-time transactions (Buy/Sell)
@@ -295,10 +402,13 @@ export function AddTransactionModal({
     setShowDropdown(false)
     setFolioNumber('')
     setTransactionDate('')
+    setAssetType('MUTUAL_FUND')
     setTransactionType('PURCHASE')
     setInputMode('amount')
     setAmount('')
     setUnits('')
+    setPricePerShare('')
+    setBrokerage('')
     setDescription('')
     setNav(null)
     setNavDate(null)
@@ -326,10 +436,53 @@ export function AddTransactionModal({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} size="xl">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Asset Type Selector - Only show if not pre-selected from asset class screen */}
+        {!hideAssetTypeSelector && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Asset Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAssetType('MUTUAL_FUND')}
+                disabled={submitting}
+                className={`
+                  flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all
+                  ${assetType === 'MUTUAL_FUND'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                  }
+                  ${submitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="font-medium">Mutual Funds</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssetType('STOCK')}
+                disabled={submitting}
+                className={`
+                  flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all
+                  ${assetType === 'STOCK'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                  }
+                  ${submitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <Coins className="w-5 h-5" />
+                <span className="font-medium">Stocks</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Scheme Search */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Select Scheme *
+            Select {assetType === 'STOCK' ? 'Stock' : 'Scheme'} *
           </label>
           <div className="relative">
             <div className="relative">
@@ -352,7 +505,7 @@ export function AddTransactionModal({
                   // Close dropdown after a small delay to allow click events to fire
                   setTimeout(() => setShowDropdown(false), 200)
                 }}
-                placeholder="Search by scheme name, ISIN, or AMC..."
+                placeholder={assetType === 'STOCK' ? 'Search by stock name or ISIN...' : 'Search by scheme name, ISIN, or AMC...'}
                 className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={submitting}
               />
@@ -395,22 +548,24 @@ export function AddTransactionModal({
           </div>
         </div>
 
-        {/* Folio Number */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Folio Number *
-          </label>
-          <Input
-            value={folioNumber}
-            onChange={(e) => setFolioNumber(e.target.value)}
-            placeholder="Enter folio number"
-            disabled={submitting}
-            required
-          />
-        </div>
+        {/* Folio Number - Only for Mutual Funds */}
+        {assetType === 'MUTUAL_FUND' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Folio Number *
+            </label>
+            <Input
+              value={folioNumber}
+              onChange={(e) => setFolioNumber(e.target.value)}
+              placeholder="Enter folio number"
+              disabled={submitting}
+              required
+            />
+          </div>
+        )}
 
-        {/* Transaction Date - Only for Buy/Sell */}
-        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
+        {/* Transaction Date - For Stock transactions and MF Buy/Sell */}
+        {(assetType === 'STOCK' || transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Transaction Date *
@@ -430,8 +585,8 @@ export function AddTransactionModal({
           </div>
         )}
 
-        {/* NAV Display - Only for Buy/Sell */}
-        {selectedScheme && transactionDate && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
+        {/* NAV Display - Only for MF Buy/Sell */}
+        {assetType === 'MUTUAL_FUND' && selectedScheme && transactionDate && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             {fetchingNav ? (
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
@@ -462,56 +617,85 @@ export function AddTransactionModal({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Transaction Type *
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="transactionType"
-                value="PURCHASE"
-                checked={transactionType === 'PURCHASE'}
-                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                disabled={submitting}
-              />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="transactionType"
-                value="REDEMPTION"
-                checked={transactionType === 'REDEMPTION'}
-                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                disabled={submitting}
-              />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="transactionType"
-                value="PURCHASE_SIP"
-                checked={transactionType === 'PURCHASE_SIP'}
-                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                disabled={submitting}
-              />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">SIP</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="transactionType"
-                value="REDEMPTION_SWP"
-                checked={transactionType === 'REDEMPTION_SWP'}
-                onChange={(e) => setTransactionType(e.target.value as TransactionType)}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                disabled={submitting}
-              />
-              <span className="ml-2 text-sm text-gray-900 dark:text-white">SWP</span>
-            </label>
-          </div>
+          {assetType === 'STOCK' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="STOCK_BUY"
+                  checked={transactionType === 'STOCK_BUY'}
+                  onChange={(e) => setTransactionType(e.target.value as StockTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="STOCK_SELL"
+                  checked={transactionType === 'STOCK_SELL'}
+                  onChange={(e) => setTransactionType(e.target.value as StockTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
+              </label>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="PURCHASE"
+                  checked={transactionType === 'PURCHASE'}
+                  onChange={(e) => setTransactionType(e.target.value as MFTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="REDEMPTION"
+                  checked={transactionType === 'REDEMPTION'}
+                  onChange={(e) => setTransactionType(e.target.value as MFTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="PURCHASE_SIP"
+                  checked={transactionType === 'PURCHASE_SIP'}
+                  onChange={(e) => setTransactionType(e.target.value as MFTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">SIP</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="transactionType"
+                  value="REDEMPTION_SWP"
+                  checked={transactionType === 'REDEMPTION_SWP'}
+                  onChange={(e) => setTransactionType(e.target.value as MFTransactionType)}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  disabled={submitting}
+                />
+                <span className="ml-2 text-sm text-gray-900 dark:text-white">SWP</span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Schedule Fields - Only for SIP/SWP */}
@@ -592,8 +776,85 @@ export function AddTransactionModal({
           </>
         )}
 
-        {/* Amount or Units Input - Only for Buy/Sell */}
-        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
+        {/* Stock-specific fields */}
+        {assetType === 'STOCK' && (
+          <>
+            {/* Units and Price Per Share in a grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Number of Shares *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={units}
+                  onChange={(e) => setUnits(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={submitting}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Price Per Share *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={pricePerShare}
+                    onChange={(e) => setPricePerShare(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={submitting}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Brokerage (Optional) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Brokerage (Optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={brokerage}
+                  onChange={(e) => setBrokerage(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+
+            {/* Total Amount Display for stocks */}
+            {calculatedValue !== null && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Total Amount: ₹{calculatedValue.toFixed(2)}
+                </div>
+                <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  {units} shares × ₹{pricePerShare}{brokerage ? ` + ₹${brokerage} brokerage` : ''}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Amount or Units Input - Only for MF Buy/Sell */}
+        {assetType === 'MUTUAL_FUND' && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Enter Amount or Units *
@@ -699,8 +960,8 @@ export function AddTransactionModal({
           </div>
         )}
 
-        {/* Description - Only for Buy/Sell */}
-        {(transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
+        {/* Description - For Stock transactions and MF Buy/Sell */}
+        {(assetType === 'STOCK' || transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Description (Optional)

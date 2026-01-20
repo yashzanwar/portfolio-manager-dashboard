@@ -1,6 +1,6 @@
 import { apiClient } from './api'
-import { PortfolioSummaryResponse, Portfolio, CreatePortfolioRequest, UpdatePortfolioRequest } from '../types/portfolio'
-import { CombinedPortfolioSummary } from '../types/combinedPortfolio'
+import { Portfolio, CreatePortfolioRequest, UpdatePortfolioRequest } from '../types/portfolio'
+import { PortfolioSummaryV2 } from '../types/portfolioV2'
 
 // Transform date arrays from backend to ISO strings
 function transformPortfolio(portfolio: any): Portfolio {
@@ -21,17 +21,6 @@ function transformPortfolio(portfolio: any): Portfolio {
 }
 
 export class PortfolioAPI {
-  static async getComprehensiveSummary(portfolioId: number): Promise<PortfolioSummaryResponse> {
-    const response = await apiClient.get<PortfolioSummaryResponse>(`/portfolios/${portfolioId}/summary`)
-    return response.data
-  }
-
-  // Alias for backward compatibility
-  static async getPortfolioSummary(portfolioId: number): Promise<any> {
-    const response = await apiClient.get<any>(`/portfolios/${portfolioId}/summary`)
-    return response.data
-  }
-
   static async checkHealth(): Promise<{ casFileCheck: { healthy: boolean } }> {
     const response = await apiClient.get<{ casFileCheck: { healthy: boolean } }>('/portfolio/health')
     return response.data
@@ -123,23 +112,18 @@ export class PortfolioAPI {
     return response.data
   }
 
-  // Combined Portfolio APIs
-  static async getCombinedSummary(portfolioIds: number[]): Promise<CombinedPortfolioSummary> {
-    const idsParam = portfolioIds.join(',')
-    const response = await apiClient.get<CombinedPortfolioSummary>(`/portfolios/summary?ids=${idsParam}`)
-    return response.data
-  }
-
   // Get combined portfolio value history
   static async getCombinedHistory(
     portfolioIds: number[],
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
   ): Promise<any> {
     const idsParam = portfolioIds.join(',')
     const params = new URLSearchParams({ ids: idsParam })
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
+    if (assetType) params.append('assetType', assetType)
     
     const response = await apiClient.get(`/portfolio-value/history?${params.toString()}`)
     return response.data
@@ -149,6 +133,62 @@ export class PortfolioAPI {
   static async getCombinedCompleteHistory(portfolioIds: number[]): Promise<any> {
     const idsParam = portfolioIds.join(',')
     const response = await apiClient.get(`/portfolio-value/complete-history?ids=${idsParam}`)
+    return response.data
+  }
+
+  // V2 API - Get portfolio summary with asset type breakdown and optional holdings
+  static async getPortfolioSummaryV2(
+    portfolioIds: number[], 
+    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK',
+    includeHoldings?: boolean
+  ): Promise<PortfolioSummaryV2> {
+    const params = new URLSearchParams()
+    params.append('portfolio_ids', portfolioIds.join(','))
+    if (assetType) {
+      params.append('asset_type', assetType)
+    }
+    if (includeHoldings !== undefined) {
+      params.append('includeHoldings', includeHoldings.toString())
+    }
+    const response = await apiClient.get<PortfolioSummaryV2>(`/portfolios/summary/v2?${params.toString()}`)
+    return response.data
+  }
+
+  // V2 API - Get transactions with unified endpoint and flexible filtering
+  static async getTransactionsV2(
+    portfolioIds: number | number[],
+    options?: {
+      assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
+      folioNumber?: string
+      isin?: string
+      ticker?: string
+    }
+  ): Promise<any[]> {
+    const params = new URLSearchParams()
+    
+    if (Array.isArray(portfolioIds)) {
+      params.append('portfolioIds', portfolioIds.join(','))
+    } else {
+      params.append('portfolioId', portfolioIds.toString())
+    }
+    
+    if (options?.assetType) {
+      params.append('assetType', options.assetType)
+    }
+    
+    if (options?.folioNumber) {
+      params.append('folioNumber', options.folioNumber)
+    }
+    
+    if (options?.isin) {
+      params.append('isin', options.isin)
+    }
+    
+    if (options?.ticker) {
+      params.append('ticker', options.ticker)
+    }
+    
+    const response = await apiClient.get<any[]>(`/transactions/v2?${params.toString()}`)
     return response.data
   }
 }

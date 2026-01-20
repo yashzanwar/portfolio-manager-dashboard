@@ -252,6 +252,8 @@ export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
         onClose={handleCancel}
         portfolioId={selectedPortfolioId}
         onSuccess={handleSuccess}
+        initialAssetType={selectedAssetClass === 'stocks' ? 'STOCK' : 'MUTUAL_FUND'}
+        hideAssetTypeSelector={true} // Hide since user already selected asset class
       />
     )
   }

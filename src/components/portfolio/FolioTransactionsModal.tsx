@@ -23,6 +23,8 @@ interface FolioTransactionsModalProps {
   portfolioId: number
   folioNumber: string
   schemeName: string
+  isin: string
+  ticker?: string // Optional ticker for stock transactions
 }
 
 export function FolioTransactionsModal({
@@ -30,21 +32,30 @@ export function FolioTransactionsModal({
   onClose,
   portfolioId,
   folioNumber,
-  schemeName
+  schemeName,
+  isin,
+  ticker
 }: FolioTransactionsModalProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen && portfolioId && folioNumber) {
+    if (isOpen && portfolioId && (folioNumber || ticker) && isin) {
       fetchTransactions()
     }
-  }, [isOpen, portfolioId, folioNumber])
+  }, [isOpen, portfolioId, folioNumber, ticker, isin])
 
   const fetchTransactions = async () => {
     setLoading(true)
     try {
-      const data = await PortfolioAPI.getFolioTransactions(portfolioId, folioNumber)
+      // Use V2 API with filters:
+      // For mutual funds: folio number AND ISIN
+      // For stocks: ticker AND ISIN
+      const options = ticker 
+        ? { ticker, isin }
+        : { folioNumber, isin }
+      
+      const data = await PortfolioAPI.getTransactionsV2(portfolioId, options)
       setTransactions(data)
     } catch (error: any) {
       console.error('Error fetching transactions:', error)

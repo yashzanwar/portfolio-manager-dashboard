@@ -28,7 +28,7 @@ const assetClasses: AssetClassOption[] = [
     label: 'Stocks',
     icon: <Coins className="w-6 h-6" />,
     description: 'Add equity stock transactions',
-    enabled: false,
+    enabled: true,
   },
   {
     id: 'crypto',

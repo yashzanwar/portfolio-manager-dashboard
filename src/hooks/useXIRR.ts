@@ -4,14 +4,17 @@ import { XIRRApi, XIRRResponse, SchemeXIRRResponse } from '../services/xirrApi'
 /**
  * Hook to fetch consolidated XIRR for selected portfolios
  */
-export function usePortfolioXIRR(portfolioIds?: number[]) {
+export function usePortfolioXIRR(
+  portfolioIds?: number[],
+  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
+) {
   return useQuery<XIRRResponse>({
-    queryKey: ['portfolio-xirr', portfolioIds],
+    queryKey: ['portfolio-xirr', portfolioIds, assetType],
     queryFn: () => {
       if (!portfolioIds || portfolioIds.length === 0) {
         throw new Error('No portfolios selected')
       }
-      return XIRRApi.getConsolidatedXIRR(portfolioIds)
+      return XIRRApi.getConsolidatedXIRR(portfolioIds, true, assetType)
     },
     enabled: !!portfolioIds && portfolioIds.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes

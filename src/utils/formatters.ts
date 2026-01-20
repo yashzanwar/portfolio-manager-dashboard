@@ -1,4 +1,7 @@
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number | null | undefined): string => {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return '—'
+  }
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -6,14 +9,20 @@ export const formatCurrency = (amount: number): string => {
   }).format(amount)
 }
 
-export const formatNumber = (value: number, decimals: number = 2): string => {
+export const formatNumber = (value: number | null | undefined, decimals: number = 2): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '—'
+  }
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value)
 }
 
-export const formatPercentage = (value: number, decimals: number = 2): string => {
+export const formatPercentage = (value: number | null | undefined, decimals: number = 2): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '—'
+  }
   return `${value >= 0 ? '+' : ''}${formatNumber(value, decimals)}%`
 }
 

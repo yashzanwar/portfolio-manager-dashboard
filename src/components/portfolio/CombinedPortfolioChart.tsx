@@ -9,6 +9,7 @@ import { TrendingUp, Calendar } from 'lucide-react'
 interface CombinedPortfolioChartProps {
   portfolioIds: number[]
   mode: 'single' | 'combined'
+  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
 }
 
 const DATE_RANGES: DateRange[] = [
@@ -30,11 +31,11 @@ const COLORS = [
   '#F97316', // orange
 ]
 
-export function CombinedPortfolioChart({ portfolioIds, mode }: CombinedPortfolioChartProps) {
+export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: CombinedPortfolioChartProps) {
   const [selectedRange, setSelectedRange] = useState<DateRangeOption>('30d')
   const [visiblePortfolios, setVisiblePortfolios] = useState<Set<number>>(new Set())
 
-  const { data: historyData, isLoading, error } = useCombinedHistory(portfolioIds, selectedRange)
+  const { data: historyData, isLoading, error } = useCombinedHistory(portfolioIds, selectedRange, assetType)
 
   // Transform data for Recharts
   const chartData = useMemo(() => {

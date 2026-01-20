@@ -1,18 +1,23 @@
-import React from 'react'
 import { TrendingUp, TrendingDown, Briefcase, DollarSign, Target } from 'lucide-react'
 import { Card } from '../common'
 import { CombinedOverallSummary } from '../../types/combinedPortfolio'
 import { formatCurrency, formatPercentage } from '../../utils/formatters'
 
 interface CombinedSummaryCardProps {
-  summary: CombinedOverallSummary
-  portfolioCount: number
-  mode: 'single' | 'combined'
+  summary?: CombinedOverallSummary
+  portfolioCount?: number
+  mode?: 'single' | 'combined'
   xirr?: number
 }
 
-export function CombinedSummaryCard({ summary, portfolioCount, mode, xirr }: CombinedSummaryCardProps) {
+export function CombinedSummaryCard({ summary, portfolioCount = 1, mode = 'single', xirr }: CombinedSummaryCardProps) {
   console.log('CombinedSummaryCard received:', { summary, portfolioCount, mode, xirr })
+  
+  // Safety check: if summary is undefined, return null or a loading state
+  if (!summary) {
+    console.warn('CombinedSummaryCard: summary is undefined')
+    return null
+  }
   
   const isPositive = (summary.total_profit_loss || 0) >= 0
 

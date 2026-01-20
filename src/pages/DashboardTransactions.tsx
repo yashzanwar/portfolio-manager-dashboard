@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePortfolioContext } from '../context/PortfolioContext'
-import { FileText, Download, Search, Filter, Info, TrendingUp, TrendingDown } from 'lucide-react'
+import { FileText, Download, Search, Filter, Info, TrendingUp, TrendingDown, Edit2, Trash2 } from 'lucide-react'
 import { EmptyState } from '../components/common'
 import { Button } from '../components/common/Button'
 import { formatCurrency, formatNumber, formatDate } from '../utils/formatters'
-import { apiClient } from '../services/api'
+import { PortfolioAPI } from '../services/portfolioApi'
+import { EditTransactionModal } from '../components/transaction/EditTransactionModal'
+import { useDeleteTransaction } from '../hooks/useTransactions'
 import toast from 'react-hot-toast'
 
 interface Transaction {
@@ -15,17 +18,38 @@ interface Transaction {
   units: number
   nav: number
   amount: number
+  brokerage?: number
   folioNumber: string
   schemeName: string
   isin?: string
+  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
 }
 
 export default function DashboardTransactions() {
   const { selectedPortfolioIds } = usePortfolioContext()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [assetTypeFilter, setAssetTypeFilter] = useState<'all' | 'MUTUAL_FUND' | 'EQUITY_STOCK'>('all')
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [currentPortfolioId, setCurrentPortfolioId] = useState<number | null>(null)
+  const { mutate: deleteTransaction } = useDeleteTransaction()
+
+  // Get URL parameters for filtering
+  const urlIsin = searchParams.get('isin')
+  const urlSymbol = searchParams.get('symbol')
+  const urlScheme = searchParams.get('scheme')
+
+  useEffect(() => {
+    // Set search term from URL parameters if present
+    if (urlScheme) {
+      setSearchTerm(urlScheme)
+    } else if (urlSymbol) {
+      setSearchTerm(urlSymbol)
+    }
+  }, [urlIsin, urlSymbol, urlScheme])
 
   useEffect(() => {
     if (selectedPortfolioIds.length > 0) {
@@ -33,29 +57,24 @@ export default function DashboardTransactions() {
     } else {
       setTransactions([])
     }
-  }, [selectedPortfolioIds])
+  }, [selectedPortfolioIds, assetTypeFilter])
 
   const fetchTransactions = async () => {
     setLoading(true)
     try {
-      const allTransactions: Transaction[] = []
-      
-      // Fetch transactions for each selected portfolio
-      for (const portfolioId of selectedPortfolioIds) {
-        try {
-          const response = await apiClient.get(`/transactions?portfolioId=${portfolioId}`)
-          allTransactions.push(...response.data)
-        } catch (error) {
-          console.error(`Error fetching transactions for portfolio ${portfolioId}:`, error)
+      // Use V2 API for unified transaction fetching
+      const data = await PortfolioAPI.getTransactionsV2(
+        selectedPortfolioIds,
+        { 
+          assetType: assetTypeFilter === 'all' ? undefined : assetTypeFilter 
         }
-      }
-      
-      // Sort by date descending (newest first)
-      allTransactions.sort((a, b) => 
-        new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
       )
       
-      setTransactions(allTransactions)
+      setTransactions(data)
+      // Set current portfolio ID for edit/delete operations
+      if (selectedPortfolioIds.length > 0) {
+        setCurrentPortfolioId(selectedPortfolioIds[0])
+      }
     } catch (error: any) {
       console.error('Error fetching transactions:', error)
       toast.error('Failed to load transactions')
@@ -64,21 +83,59 @@ export default function DashboardTransactions() {
     }
   }
 
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction)
+  }
+
+  const handleDelete = (transaction: Transaction) => {
+    if (!currentPortfolioId) {
+      toast.error('No portfolio selected')
+      return
+    }
+
+    if (window.confirm(`Are you sure you want to delete this transaction?\n\nScheme: ${transaction.schemeName}\nDate: ${formatDate(transaction.transactionDate)}\nAmount: ${formatCurrency(transaction.amount)}`)) {
+      deleteTransaction({
+        transactionId: transaction.id,
+        portfolioId: currentPortfolioId
+      }, {
+        onSuccess: () => {
+          // Refresh transactions list
+          fetchTransactions()
+        }
+      })
+    }
+  }
+
   const getTransactionTypeColor = (type: string) => {
     switch (type?.toUpperCase()) {
       case 'PURCHASE':
       case 'PURCHASE_SIP':
+      case 'STOCK_BUY':
         return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
       case 'REDEMPTION':
       case 'REDEMPTION_SWP':
+      case 'STOCK_SELL':
         return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
       case 'SWITCH_IN':
         return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
       case 'SWITCH_OUT':
         return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20'
+      case 'DIVIDEND_REINVEST':
+      case 'DIVIDEND_PAYOUT':
+        return 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+      case 'BONUS':
+      case 'STOCK_SPLIT':
+        return 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20'
       default:
         return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20'
     }
+  }
+
+  const isRedemptionType = (type: string) => {
+    const upperType = type?.toUpperCase() || ''
+    return upperType.includes('REDEMPTION') || 
+           upperType === 'STOCK_SELL' || 
+           upperType === 'SWITCH_OUT'
   }
 
   const exportToCSV = () => {
@@ -130,12 +187,20 @@ export default function DashboardTransactions() {
   const transactionTypes = ['all', ...Array.from(new Set(transactions.map(t => t.transactionType)))]
 
   // Calculate summary stats
+  // Include both mutual fund types (PURCHASE, PURCHASE_SIP) and stock types (STOCK_BUY)
   const totalPurchase = transactions
-    .filter(t => t.transactionType?.toUpperCase().includes('PURCHASE'))
+    .filter(t => {
+      const type = t.transactionType?.toUpperCase() || ''
+      return type.includes('PURCHASE') || type === 'STOCK_BUY' || type === 'SWITCH_IN'
+    })
     .reduce((sum, t) => sum + (t.amount || 0), 0)
   
+  // Include both mutual fund types (REDEMPTION, REDEMPTION_SWP) and stock types (STOCK_SELL)
   const totalRedemption = transactions
-    .filter(t => t.transactionType?.toUpperCase().includes('REDEMPTION'))
+    .filter(t => {
+      const type = t.transactionType?.toUpperCase() || ''
+      return type.includes('REDEMPTION') || type === 'STOCK_SELL' || type === 'SWITCH_OUT'
+    })
     .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0)
 
   return (
@@ -238,6 +303,22 @@ export default function DashboardTransactions() {
                 />
               </div>
               
+              {/* Asset Type Filter */}
+              <div className="md:w-48">
+                <div className="relative">
+                  <Filter className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    value={assetTypeFilter}
+                    onChange={(e) => setAssetTypeFilter(e.target.value as any)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                  >
+                    <option value="all">All Assets</option>
+                    <option value="MUTUAL_FUND">Mutual Funds</option>
+                    <option value="EQUITY_STOCK">Stocks</option>
+                  </select>
+                </div>
+              </div>
+              
               {/* Type Filter */}
               <div className="md:w-64">
                 <div className="relative">
@@ -298,6 +379,9 @@ export default function DashboardTransactions() {
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Amount
                       </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -324,9 +408,29 @@ export default function DashboardTransactions() {
                           {formatCurrency(transaction.nav)}
                         </td>
                         <td className="px-4 py-3 text-sm text-right font-mono font-medium">
-                          <span className={transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                          <span className={isRedemptionType(transaction.transactionType) 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'text-green-600 dark:text-green-400'}>
                             {formatCurrency(Math.abs(transaction.amount))}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(transaction)}
+                              className="p-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                              title="Edit transaction"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(transaction)}
+                              className="p-1.5 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Delete transaction"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -336,6 +440,19 @@ export default function DashboardTransactions() {
             )}
           </div>
         </>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && currentPortfolioId && (
+        <EditTransactionModal
+          isOpen={!!editingTransaction}
+          onClose={() => {
+            setEditingTransaction(null)
+            fetchTransactions() // Refresh after edit
+          }}
+          transaction={editingTransaction}
+          portfolioId={currentPortfolioId}
+        />
       )}
     </div>
   )

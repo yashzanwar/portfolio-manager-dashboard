@@ -29,11 +29,12 @@ function getDateRange(range: DateRangeOption): { startDate?: string; endDate?: s
 
 export function useCombinedHistory(
   portfolioIds?: number[],
-  dateRange: DateRangeOption = '30d'
+  dateRange: DateRangeOption = '30d',
+  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
 ) {
   const ids = portfolioIds ?? []
   return useQuery<CombinedPortfolioHistory>({
-    queryKey: ['combined-portfolio-history', ids.slice().sort((a, b) => a - b).join(','), dateRange],
+    queryKey: ['combined-portfolio-history', ids.slice().sort((a, b) => a - b).join(','), dateRange, assetType],
     queryFn: async () => {
       if (ids.length === 0) {
         throw new Error('No portfolios selected')
@@ -42,7 +43,7 @@ export function useCombinedHistory(
         return await PortfolioAPI.getCombinedCompleteHistory(ids)
       } else {
         const { startDate, endDate } = getDateRange(dateRange)
-        return await PortfolioAPI.getCombinedHistory(ids, startDate, endDate)
+        return await PortfolioAPI.getCombinedHistory(ids, startDate, endDate, assetType)
       }
     },
     enabled: ids.length > 0,

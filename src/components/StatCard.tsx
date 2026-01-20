@@ -8,9 +8,10 @@ interface StatCardProps {
   icon?: React.ReactNode
   iconBgColor?: string
   iconColor?: string
+  valueColor?: string
 }
 
-export function StatCard({ title, value, change, changeLabel, icon, iconBgColor, iconColor }: StatCardProps) {
+export function StatCard({ title, value, change, changeLabel, icon, iconBgColor, iconColor, valueColor }: StatCardProps) {
   const isPositive = change !== undefined ? change >= 0 : true
   const defaultIconBg = 'bg-blue-100 dark:bg-blue-900/30'
   const defaultIconColor = 'text-blue-600 dark:text-blue-400'
@@ -20,7 +21,7 @@ export function StatCard({ title, value, change, changeLabel, icon, iconBgColor,
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mt-2">
+          <h3 className={`text-2xl md:text-3xl font-bold mt-2 ${valueColor || 'text-gray-900 dark:text-white'}`}>
             {value}
           </h3>
         </div>
