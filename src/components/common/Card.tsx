@@ -6,9 +6,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export const Card = ({ variant = 'default', className = '', children, ...props }: CardProps) => {
   const variants = {
-    default: 'bg-white dark:bg-gray-800 shadow-sm',
-    bordered: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
-    elevated: 'bg-white dark:bg-gray-800 shadow-lg'
+    default: 'bg-gray-950 border border-gray-900',
+    bordered: 'bg-gray-950 border border-gray-900',
+    elevated: 'bg-gray-950 border border-gray-900'
   }
   
   return (
@@ -32,8 +32,8 @@ export const CardHeader = ({ title, subtitle, action, className = '', children, 
     <div className={`mb-4 ${className}`} {...props}>
       <div className="flex items-start justify-between">
         <div>
-          {title && <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>}
-          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+          {title && <h3 className="text-lg font-semibold text-gray-300">{title}</h3>}
+          {subtitle && <p className="text-sm text-gray-400 mt-1">{subtitle}</p>}
           {children}
         </div>
         {action && <div>{action}</div>}

@@ -42,8 +42,6 @@ export function PortfolioChart({ portfolioId }: PortfolioChartProps) {
       setLoading(true)
       setError(null)
 
-      console.log('Fetching chart data for period:', selectedPeriod)
-
       let response: any
 
       if (selectedPeriod === 'ALL') {
@@ -61,8 +59,6 @@ export function PortfolioChart({ portfolioId }: PortfolioChartProps) {
 
         const startDateStr = startDate.toISOString().split('T')[0]
         const endDateStr = endDate.toISOString().split('T')[0]
-
-        console.log('Date range:', { startDateStr, endDateStr, period: selectedPeriod })
 
         response = await PortfolioAPI.getPortfolioValueHistory(
           portfolioId,

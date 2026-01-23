@@ -13,56 +13,66 @@ export default function DashboardMutualFunds() {
         {
           header: 'Scheme',
           key: 'displayName',
-          align: 'left'
+          align: 'left',
+          showBorderRight: true
         },
         {
           header: 'Units',
           key: 'current_units',
-          align: 'center',
+          align: 'right',
           format: (value) => formatNumber(value, 3)
         },
         {
           header: 'Avg NAV',
           key: 'average_nav',
-          align: 'center',
+          align: 'right',
           format: (value) => formatCurrency(value)
         },
         {
           header: 'Current NAV',
           key: 'current_nav',
-          align: 'center',
-          format: (value) => formatCurrency(value)
+          align: 'right',
+          format: (value) => formatCurrency(value),
+          showBorderRight: true
         },
         {
           header: 'Invested',
           key: 'totalInvested',
-          align: 'center',
+          align: 'right',
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current Value',
+          header: 'Current value',
           key: 'currentValue',
-          align: 'center',
-          format: (value) => formatCurrency(value)
+          align: 'right',
+          format: (value) => formatCurrency(value),
+          showBorderRight: true
         },
         {
-          header: 'P&L / XIRR',
+          header: 'P&L',
           key: 'totalProfitLoss',
-          align: 'center',
-          format: (value, holding) => {
-            const xirr = holding.xirr ?? 0
+          align: 'right',
+          format: (value) => (
+            <span className={`font-medium ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatCurrency(value)}
+            </span>
+          )
+        },
+        {
+          header: 'XIRR',
+          key: 'xirr',
+          align: 'right',
+          format: (value) => {
+            if (value === null || value === undefined || Math.abs(value) > 1000) {
+              return <span className="text-gray-500">—</span>
+            }
             return (
-              <div className="text-center">
-                <div className={`font-medium ${value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(value)}
-                </div>
-                <div className={`text-xs flex items-center justify-center gap-1 ${xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {xirr >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {formatPercentage(xirr)}
-                </div>
-              </div>
+              <span className={`${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatPercentage(value)}
+              </span>
             )
-          }
+          },
+          showBorderRight: true
         },
         {
           header: 'Actions',

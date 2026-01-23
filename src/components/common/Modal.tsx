@@ -47,19 +47,19 @@ export const Modal = ({ isOpen, onClose, title, size = 'md', className = '', chi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] flex flex-col ${className}`}>
+      <div className={`relative bg-black rounded-xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] flex flex-col ${className}`}>
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-900 flex-shrink-0">
+            <h2 className="text-xl font-semibold text-gray-200">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              className="text-gray-400 hover:text-gray-200 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -93,7 +93,7 @@ export const ModalFooter = ({
   children 
 }: ModalFooterProps) => {
   return (
-    <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 ${className}`}>
+    <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-900 ${className}`}>
       {children || (
         <>
           {onCancel && (

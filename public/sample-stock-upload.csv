@@ -1,0 +1,4 @@
+Transaction Date,Company Name,ISIN,Transaction Type,Price,Shares,Brokerage,Description
+2024-01-15,Reliance Industries,INE002A01018,Buy,2450.50,10,25.00,Long term investment
+2024-03-20,Infosys Ltd.,INE009A01021,Buy,1520.75,20,30.00,Tech sector investment
+2024-06-10,TCS Ltd.,INE467B01029,Sell,3280.00,5,15.00,Profit booking

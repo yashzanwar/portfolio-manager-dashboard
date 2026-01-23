@@ -66,29 +66,29 @@ export function PortfolioSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black border border-gray-900 rounded-lg hover:bg-[#0a0a0a] transition-colors"
       >
-        <Briefcase className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-        <span className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px] sm:max-w-none">
+        <Briefcase className="w-4 h-4 text-gray-400" />
+        <span className="text-sm font-medium text-gray-200 truncate max-w-[120px] sm:max-w-none">
           {getDisplayText()}
         </span>
-        <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="fixed md:absolute top-16 md:top-full left-0 right-0 md:left-auto md:right-auto mt-0 md:mt-2 md:w-80 bg-white dark:bg-gray-800 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-lg shadow-lg z-50 max-h-[calc(100vh-4rem)] md:max-h-96 overflow-hidden flex flex-col">
+        <div className="fixed md:absolute top-16 md:top-full left-0 right-0 md:left-auto md:right-auto mt-0 md:mt-2 md:w-80 bg-black border-t md:border border-gray-900 md:rounded-lg shadow-lg z-50 max-h-[calc(100vh-4rem)] md:max-h-96 overflow-hidden flex flex-col">
           {/* Header with Select All */}
-          <div className="p-3 md:p-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-3 md:p-3 border-b border-gray-900">
             <button
               onClick={handleSelectAll}
-              className="flex items-center gap-3 w-full px-4 py-3 md:px-3 md:py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-3 md:px-3 md:py-2 hover:bg-[#0a0a0a] rounded-md transition-colors"
             >
               {allSelected ? (
-                <CheckSquare className="w-6 h-6 md:w-5 md:h-5 text-blue-600" />
+                <CheckSquare className="w-6 h-6 md:w-5 md:h-5 text-blue-500" />
               ) : (
-                <Square className="w-6 h-6 md:w-5 md:h-5 text-gray-400" />
+                <Square className="w-6 h-6 md:w-5 md:h-5 text-gray-500" />
               )}
-              <span className="text-base md:text-sm font-medium text-gray-900 dark:text-white">
+              <span className="text-base md:text-sm font-medium text-gray-200">
                 Select All ({totalCount})
               </span>
             </button>
@@ -101,7 +101,7 @@ export function PortfolioSelector() {
                 <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gray-200 border-t-blue-600"></div>
               </div>
             ) : portfolios.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              <div className="p-4 text-center text-sm text-gray-400">
                 No portfolios available
               </div>
             ) : (
@@ -112,19 +112,19 @@ export function PortfolioSelector() {
                     <button
                       key={portfolio.id}
                       onClick={() => togglePortfolio(portfolio.id)}
-                      className="flex items-center gap-3 w-full px-4 py-3.5 md:py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center gap-3 w-full px-4 py-3.5 md:py-2.5 hover:bg-[#0a0a0a] transition-colors"
                     >
                       {isSelected ? (
-                        <CheckSquare className="w-6 h-6 md:w-5 md:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <CheckSquare className="w-6 h-6 md:w-5 md:h-5 text-blue-500 flex-shrink-0" />
                       ) : (
-                        <Square className="w-6 h-6 md:w-5 md:h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                        <Square className="w-6 h-6 md:w-5 md:h-5 text-gray-500 flex-shrink-0" />
                       )}
                       <div className="flex-1 text-left min-w-0">
-                        <div className="text-base md:text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <div className="text-base md:text-sm font-medium text-gray-200 truncate">
                           {portfolio.portfolioName}
                         </div>
                         {portfolio.description && (
-                          <div className="text-sm md:text-xs text-gray-500 dark:text-gray-400 truncate">
+                          <div className="text-sm md:text-xs text-gray-400 truncate">
                             {portfolio.description}
                           </div>
                         )}
@@ -137,8 +137,8 @@ export function PortfolioSelector() {
           </div>
 
           {/* Footer with selection count */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="p-3 border-t border-gray-900 bg-black">
+            <div className="text-xs text-gray-400">
               {selectedCount > 0 ? (
                 <span>
                   {selectedCount} of {totalCount} selected

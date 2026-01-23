@@ -35,7 +35,7 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
   }
 
   return (
-    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <nav className="bg-black border-b border-gray-900">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Left: Hamburger + Logo + Portfolio Selector */}
@@ -43,17 +43,17 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
             {/* Hamburger Menu Button - Mobile Only */}
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="lg:hidden p-2 hover:bg-gray-900 rounded-lg transition-colors"
               aria-label="Toggle sidebar"
             >
-              <Menu className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              <Menu className="w-6 h-6 text-gray-400" />
             </button>
 
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">PM</span>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">
+              <h1 className="text-xl font-bold text-white hidden sm:block">
                 Portfolio Manager
               </h1>
             </div>
@@ -75,8 +75,8 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
           {/* Right: Notifications + User Menu */}
           <div className="flex items-center gap-3">
             {/* Notifications */}
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors relative">
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <button className="p-2 hover:bg-gray-900 rounded-lg transition-colors relative">
+              <Bell className="w-5 h-5 text-gray-400" />
               {/* Notification badge (example) */}
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
@@ -85,28 +85,28 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-900 rounded-lg transition-colors"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="text-sm font-medium text-white">
                     {user?.name || 'User'}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-gray-400">
                     {user?.email || ''}
                   </div>
                 </div>
               </button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2">
-                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                <div className="absolute right-0 mt-2 w-56 bg-gray-950 border border-gray-900 rounded-lg shadow-lg z-50 py-2">
+                  <div className="px-4 py-2 border-b border-gray-900">
+                    <div className="text-sm font-medium text-white">
                       {user?.name || 'User'}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-gray-400">
                       {user?.email || ''}
                     </div>
                   </div>
@@ -116,15 +116,15 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
                       setIsUserMenuOpen(false)
                       // Navigate to settings (will implement later)
                     }}
-                    className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-900 transition-colors"
                   >
-                    <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Settings</span>
+                    <Settings className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-300">Settings</span>
                   </button>
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
+                    className="flex items-center gap-3 w-full px-4 py-2 hover:bg-gray-900 transition-colors text-red-400"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="text-sm">Logout</span>

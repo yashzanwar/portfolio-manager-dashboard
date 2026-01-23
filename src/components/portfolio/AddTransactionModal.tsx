@@ -439,7 +439,7 @@ export function AddTransactionModal({
         {/* Asset Type Selector - Only show if not pre-selected from asset class screen */}
         {!hideAssetTypeSelector && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Asset Type
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -450,8 +450,8 @@ export function AddTransactionModal({
                 className={`
                   flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all
                   ${assetType === 'MUTUAL_FUND'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    ? 'border-gray-800 bg-black text-gray-300'
+                    : 'border-gray-900 bg-black text-gray-500 hover:border-gray-800'
                   }
                   ${submitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
@@ -466,8 +466,8 @@ export function AddTransactionModal({
                 className={`
                   flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all
                   ${assetType === 'STOCK'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    ? 'border-gray-800 bg-black text-gray-300'
+                    : 'border-gray-900 bg-black text-gray-500 hover:border-gray-800'
                   }
                   ${submitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
@@ -481,7 +481,7 @@ export function AddTransactionModal({
 
         {/* Scheme Search */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Select {assetType === 'STOCK' ? 'Stock' : 'Scheme'} *
           </label>
           <div className="relative">
@@ -506,28 +506,28 @@ export function AddTransactionModal({
                   setTimeout(() => setShowDropdown(false), 200)
                 }}
                 placeholder={assetType === 'STOCK' ? 'Search by stock name or ISIN...' : 'Search by scheme name, ISIN, or AMC...'}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-10 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 disabled={submitting}
               />
               {searchingSchemes && (
-                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 animate-spin" />
               )}
             </div>
 
             {/* Dropdown */}
             {showDropdown && schemes.length > 0 && !selectedScheme && (
-              <div className="absolute z-10 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">
+              <div className="absolute z-10 w-full mt-1 max-h-60 overflow-auto bg-black border border-gray-900 rounded-lg shadow-lg">
                 {schemes.map((scheme) => (
                   <button
                     key={scheme.id}
                     type="button"
                     onClick={() => handleSchemeSelect(scheme)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                    className="w-full text-left px-4 py-3 hover:bg-[#0a0a0a] border-b border-gray-900 last:border-b-0"
                   >
-                    <div className="font-medium text-gray-900 dark:text-white text-sm">
+                    <div className="font-medium text-gray-300 text-sm">
                       {scheme.schemeName}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 mt-1">
                       {scheme.amc} • {scheme.isin}
                     </div>
                   </button>
@@ -536,11 +536,11 @@ export function AddTransactionModal({
             )}
 
             {selectedScheme && (
-              <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <div className="mt-2 p-3 bg-black border border-gray-900 rounded-lg">
+                <div className="text-sm font-medium text-gray-300">
                   {selectedScheme.schemeName}
                 </div>
-                <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                <div className="text-xs text-gray-400 mt-1">
                   {selectedScheme.amc} • {selectedScheme.isin}
                 </div>
               </div>
@@ -551,7 +551,7 @@ export function AddTransactionModal({
         {/* Folio Number - Only for Mutual Funds */}
         {assetType === 'MUTUAL_FUND' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Folio Number *
             </label>
             <Input
@@ -567,17 +567,17 @@ export function AddTransactionModal({
         {/* Transaction Date - For Stock transactions and MF Buy/Sell */}
         {(assetType === 'STOCK' || transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Transaction Date *
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
                 type="date"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               disabled={submitting}
               required
             />
@@ -587,25 +587,25 @@ export function AddTransactionModal({
 
         {/* NAV Display - Only for MF Buy/Sell */}
         {assetType === 'MUTUAL_FUND' && selectedScheme && transactionDate && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4 bg-black border border-gray-900 rounded-lg">
             {fetchingNav ? (
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2 text-gray-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm">Fetching NAV...</span>
               </div>
             ) : nav ? (
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                <div className="text-sm font-medium text-gray-300">
                   NAV on {formatDate(navDate || transactionDate)}: ₹{nav.toFixed(4)}
                 </div>
                 {navDate !== transactionDate && (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  <div className="text-xs text-amber-400 mt-1">
                     ⚠ Using NAV from {formatDate(navDate!)} (latest available)
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-sm text-red-600 dark:text-red-400">
+              <div className="text-sm text-red-400">
                 NAV not available for this date
               </div>
             )}
@@ -614,7 +614,7 @@ export function AddTransactionModal({
 
         {/* Transaction Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Transaction Type *
           </label>
           {assetType === 'STOCK' ? (
@@ -629,7 +629,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
+                <span className="ml-2 text-sm text-gray-300">Buy</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -641,7 +641,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
+                <span className="ml-2 text-sm text-gray-300">Sell</span>
               </label>
             </div>
           ) : (
@@ -656,7 +656,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">Buy</span>
+                <span className="ml-2 text-sm text-gray-300">Buy</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -668,7 +668,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">Sell</span>
+                <span className="ml-2 text-sm text-gray-300">Sell</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -680,7 +680,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">SIP</span>
+                <span className="ml-2 text-sm text-gray-300">SIP</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -692,7 +692,7 @@ export function AddTransactionModal({
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   disabled={submitting}
                 />
-                <span className="ml-2 text-sm text-gray-900 dark:text-white">SWP</span>
+                <span className="ml-2 text-sm text-gray-300">SWP</span>
               </label>
             </div>
           )}
@@ -705,7 +705,7 @@ export function AddTransactionModal({
             <div className="grid grid-cols-2 gap-4">
               {/* Start Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Start Date *
                 </label>
                 <div className="relative">
@@ -714,7 +714,7 @@ export function AddTransactionModal({
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     disabled={submitting}
                     required
                   />
@@ -723,17 +723,17 @@ export function AddTransactionModal({
 
               {/* End Date (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   End Date (Optional)
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     min={startDate}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     disabled={submitting}
                   />
                 </div>
@@ -741,13 +741,13 @@ export function AddTransactionModal({
 
               {/* Frequency */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Frequency *
                 </label>
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   disabled={submitting}
                   required
                 >
@@ -759,7 +759,7 @@ export function AddTransactionModal({
 
               {/* Total Installments (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Total Installments (Optional)
                 </label>
                 <input
@@ -767,7 +767,7 @@ export function AddTransactionModal({
                   min="1"
                   value={totalInstallments}
                   onChange={(e) => setTotalInstallments(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Leave blank for perpetual"
                   disabled={submitting}
                 />
@@ -782,7 +782,7 @@ export function AddTransactionModal({
             {/* Units and Price Per Share in a grid */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Number of Shares *
                 </label>
                 <input
@@ -792,18 +792,18 @@ export function AddTransactionModal({
                   value={units}
                   onChange={(e) => setUnits(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   disabled={submitting}
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Price Per Share *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">₹</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                   <input
                     type="number"
                     step="0.01"
@@ -811,7 +811,7 @@ export function AddTransactionModal({
                     value={pricePerShare}
                     onChange={(e) => setPricePerShare(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-8 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     disabled={submitting}
                     required
                   />
@@ -821,11 +821,11 @@ export function AddTransactionModal({
 
             {/* Brokerage (Optional) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Brokerage (Optional)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">₹</span>
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                 <input
                   type="number"
                   step="0.01"
@@ -833,7 +833,7 @@ export function AddTransactionModal({
                   value={brokerage}
                   onChange={(e) => setBrokerage(e.target.value)}
                   placeholder="0.00"
-                  className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   disabled={submitting}
                 />
               </div>
@@ -841,11 +841,11 @@ export function AddTransactionModal({
 
             {/* Total Amount Display for stocks */}
             {calculatedValue !== null && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <div className="p-4 bg-black border border-gray-900 rounded-lg">
+                <div className="text-sm font-medium text-gray-300">
                   Total Amount: ₹{calculatedValue.toFixed(2)}
                 </div>
-                <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                <div className="text-xs text-gray-400 mt-1">
                   {units} shares × ₹{pricePerShare}{brokerage ? ` + ₹${brokerage} brokerage` : ''}
                 </div>
               </div>
@@ -856,7 +856,7 @@ export function AddTransactionModal({
         {/* Amount or Units Input - Only for MF Buy/Sell */}
         {assetType === 'MUTUAL_FUND' && (transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Enter Amount or Units *
           </label>
           
@@ -871,8 +871,8 @@ export function AddTransactionModal({
               }}
               className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                 inputMode === 'amount'
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  ? 'bg-gray-800 text-gray-200 border-gray-700'
+                  : 'bg-black text-gray-400 border-gray-900 hover:bg-[#0a0a0a] hover:border-gray-800'
               }`}
               disabled={submitting}
             >
@@ -888,8 +888,8 @@ export function AddTransactionModal({
               }}
               className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                 inputMode === 'units'
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  ? 'bg-gray-800 text-gray-200 border-gray-700'
+                  : 'bg-black text-gray-400 border-gray-900 hover:bg-[#0a0a0a] hover:border-gray-800'
               }`}
               disabled={submitting}
             >
@@ -911,7 +911,7 @@ export function AddTransactionModal({
                 required
               />
               {calculatedValue !== null && (
-                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-2 text-sm text-gray-400">
                   ≈ {calculatedValue.toFixed(3)} units
                 </div>
               )}
@@ -928,7 +928,7 @@ export function AddTransactionModal({
                 required
               />
               {calculatedValue !== null && (
-                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-2 text-sm text-gray-400">
                   ≈ ₹{calculatedValue.toFixed(2)}
                 </div>
               )}
@@ -940,7 +940,7 @@ export function AddTransactionModal({
         {/* Amount Input - Only for SIP/SWP */}
         {(transactionType === 'PURCHASE_SIP' || transactionType === 'REDEMPTION_SWP') && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Amount *
             </label>
             <div className="relative">
@@ -951,7 +951,7 @@ export function AddTransactionModal({
                 min="100"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter amount"
                 disabled={submitting}
                 required
@@ -963,7 +963,7 @@ export function AddTransactionModal({
         {/* Description - For Stock transactions and MF Buy/Sell */}
         {(assetType === 'STOCK' || transactionType === 'PURCHASE' || transactionType === 'REDEMPTION') && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Description (Optional)
           </label>
           <textarea
@@ -971,14 +971,14 @@ export function AddTransactionModal({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add a note about this transaction..."
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             disabled={submitting}
           />
         </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex gap-3 pt-4 border-t border-gray-900">
           <Button
             type="button"
             variant="secondary"

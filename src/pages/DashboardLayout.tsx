@@ -31,10 +31,10 @@ export default function DashboardLayout() {
   // Wait for hydration before making any routing decisions
   if (!hasHydrated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+      <div className="flex items-center justify-center h-screen bg-black">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
-          <p className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-blue-600"></div>
+          <p className="mt-4 text-lg font-medium text-gray-100">Loading...</p>
         </div>
       </div>
     )
@@ -51,7 +51,7 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-black">
       {/* Professional Navbar with Portfolio Selector */}
       <MainNavbar 
         onAddTransaction={() => setIsTransactionDrawerOpen(true)}
@@ -62,7 +62,7 @@ export default function DashboardLayout() {
         {/* Mobile Sidebar Backdrop */}
         {isMobileSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            className="fixed inset-0 bg-black/80 z-30 lg:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
         )}

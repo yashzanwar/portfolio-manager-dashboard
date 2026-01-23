@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, MoreVertical, Eye, ChevronDown, ChevronRight, Tag, ChevronUp, TrendingUp, Wallet, DollarSign, BarChart3 } from 'lucide-react'
+import { Search, Plus, MoreVertical, Eye, EyeOff, ChevronDown, ChevronRight, Tag, ChevronUp, TrendingUp, Wallet, DollarSign, BarChart3 } from 'lucide-react'
 import { Card } from '../components/common/Card'
 import { TableSkeleton, EmptyState } from '../components/common'
 import { StatCard } from '../components/StatCard'
@@ -80,6 +80,7 @@ export default function DashboardHoldings({
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [hideSmallHoldings, setHideSmallHoldings] = useState(true)
   
   // Transaction modals
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
@@ -125,8 +126,13 @@ export default function DashboardHoldings({
             if (col.key.includes('quantity') || col.key.includes('units') || col.key === 'current_units') {
               existing[col.key] = (existing[col.key] || 0) + (holding[col.key] || 0)
             }
-            // For prices, calculate weighted average
-            else if (col.key.includes('price') || col.key.includes('nav')) {
+            // For average buy price/NAV, calculate weighted average using totalInvested
+            else if (col.key === 'average_price' || col.key === 'average_nav') {
+              const totalQuantity = existing.current_units || existing.quantity || 1
+              existing[col.key] = existing.totalInvested / totalQuantity
+            }
+            // For current price, calculate using currentValue
+            else if (col.key === 'current_price' || col.key === 'current_nav') {
               const totalQuantity = existing.current_units || existing.quantity || 1
               existing[col.key] = existing.currentValue / totalQuantity
             }
@@ -200,11 +206,19 @@ export default function DashboardHoldings({
     holding.subtitle.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Filter out holdings with zero quantity if toggle is enabled
+  const filteredByValueHoldings = hideSmallHoldings
+    ? filteredHoldings.filter(holding => {
+        const qty = holding.quantity || holding.current_units || 0
+        return qty > 0
+      })
+    : filteredHoldings
+
   // Sort holdings
   const sortedHoldings = useMemo(() => {
-    if (!sortBy) return filteredHoldings
+    if (!sortBy) return filteredByValueHoldings
 
-    return [...filteredHoldings].sort((a, b) => {
+    return [...filteredByValueHoldings].sort((a, b) => {
       let aValue = a[sortBy]
       let bValue = b[sortBy]
 
@@ -227,7 +241,7 @@ export default function DashboardHoldings({
 
       return 0
     })
-  }, [filteredHoldings, sortBy, sortOrder])
+  }, [filteredByValueHoldings, sortBy, sortOrder])
 
   // Handle column header click for sorting
   const handleSort = (columnKey: string) => {
@@ -350,38 +364,42 @@ export default function DashboardHoldings({
 
   return (
     <div className="p-6 space-y-6">
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Current Value"
-          value={formatCurrency(currentValue)}
-          icon={<DollarSign className="w-6 h-6" />}
-          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconColor="text-blue-600 dark:text-blue-400"
-        />
-        <StatCard
-          title="Total Invested"
-          value={formatCurrency(totalInvested)}
-          icon={<Wallet className="w-6 h-6" />}
-          iconBgColor="bg-green-100 dark:bg-green-900/30"
-          iconColor="text-green-600 dark:text-green-400"
-        />
-        <StatCard
-          title="Total P&L"
-          value={formatCurrency(totalProfitLoss)}
-          change={totalProfitLossPercentage}
-          icon={<TrendingUp className="w-6 h-6" />}
-          iconBgColor={totalProfitLoss >= 0 ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}
-          iconColor={totalProfitLoss >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}
-        />
-        <StatCard
-          title="XIRR"
-          value={xirrValue !== null ? formatPercentage(xirrValue) : 'N/A'}
-          icon={<BarChart3 className="w-6 h-6" />}
-          iconBgColor={xirrValue === null ? "bg-gray-100 dark:bg-gray-900/30" : xirrValue >= 0 ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}
-          iconColor={xirrValue === null ? "text-gray-600 dark:text-gray-400" : xirrValue >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}
-          valueColor={xirrValue === null ? undefined : xirrValue >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}
-        />
+      {/* Title */}
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
+
+      {/* Summary Statistics - 4 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">Total investment</div>
+          <div className="text-3xl font-bold text-white">
+            {formatCurrency(totalInvested)}
+          </div>
+        </Card>
+        <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">Current value</div>
+          <div className="text-3xl font-bold text-white">
+            {formatCurrency(currentValue)}
+          </div>
+        </Card>
+        <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">Total P&L</div>
+          <div className={`text-3xl font-bold flex items-center gap-2 ${
+            totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {formatCurrency(totalProfitLoss)}
+            <span className="text-lg">
+              {formatPercentage(totalProfitLossPercentage)}
+            </span>
+          </div>
+        </Card>
+        <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">XIRR (Annualized)</div>
+          <div className={`text-3xl font-bold ${
+            (xirrData?.xirr ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {xirrData?.xirr != null ? `${xirrData.xirr >= 0 ? '+' : ''}${xirrData.xirr.toFixed(2)}%` : 'N/A'}
+          </div>
+        </Card>
       </div>
 
       {/* Chart - Optional */}
@@ -393,51 +411,63 @@ export default function DashboardHoldings({
         />
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {sortedHoldings.length} holdings
-          </p>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
+      {/* Search Bar */}
+      <Card className="p-4 bg-gray-950 border-gray-900">
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={`Search ${assetType === 'EQUITY_STOCK' ? 'stocks' : 'mutual funds'}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border-0 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
+          <button
+            onClick={() => setHideSmallHoldings(!hideSmallHoldings)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-900 rounded-lg transition-colors"
+          >
+            {hideSmallHoldings ? (
+              <>
+                <Eye className="w-4 h-4" />
+                <span>Show All</span>
+              </>
+            ) : (
+              <>
+                <EyeOff className="w-4 h-4" />
+                <span>Hide Zero Qty</span>
+              </>
+            )}
+          </button>
         </div>
       </Card>
 
       {/* Holdings Table */}
-      <Card>
-        <div className="overflow-x-auto">
+      <Card className="overflow-hidden bg-black border-0">
+        <div>
           <table className="w-full table-fixed">
-            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-black border-b border-gray-900">
               <tr>
-                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8"></th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-8"></th>
                 {columns.map((col, idx) => (
                   <th
                     key={idx}
                     onClick={() => handleSort(col.key)}
-                    className={`px-3 py-3 text-${col.align || 'left'} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
-                      col.key === 'displayName' ? 'w-[30%]' : 
-                      col.key === 'actions' ? 'w-16' : 
-                      'w-[10%]'
-                    } ${col.key !== 'actions' ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors' : ''}`}
+                    className={`px-3 py-2 text-${col.align || 'left'} text-[10px] font-semibold text-gray-500 uppercase tracking-wide ${
+                      col.showBorderRight ? 'border-r border-gray-900' : ''
+                    } ${
+                      col.key === 'displayName' ? 'w-[20%]' : 
+                      col.key === 'actions' ? 'w-14' : 
+                      ''
+                    } ${col.key !== 'actions' ? 'cursor-pointer hover:bg-gray-950 transition-colors' : ''}`}
                   >
-                    <div className="flex items-center gap-1 justify-${col.align || 'left'}">
-                      <span>{col.header}</span>
+                    <div className={`flex items-center gap-1 ${
+                      col.align === 'right' ? 'justify-end' : 
+                      col.align === 'center' ? 'justify-center' : 
+                      'justify-start'
+                    }`}>
+                      <span className="whitespace-nowrap">{col.header}</span>
                       {col.key !== 'actions' && sortBy === col.key && (
                         sortOrder === 'asc' ? 
                           <ChevronUp className="w-3 h-3" /> : 
@@ -448,7 +478,7 @@ export default function DashboardHoldings({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-black divide-y divide-gray-900">
               {sortedHoldings.map((holding) => {
                 const isExpanded = expandedHoldings.has(holding.identifier)
                 const hasMultiplePortfolios = holding.holdings.length > 1
@@ -458,33 +488,39 @@ export default function DashboardHoldings({
                     {/* Aggregated Row */}
                     <tr
                       key={holding.identifier}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                      className="hover:bg-gray-950 cursor-pointer transition-colors"
                       onClick={() => hasMultiplePortfolios && toggleExpansion(holding.identifier)}
                     >
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-2.5">
                         {hasMultiplePortfolios && (
                           isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                            <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
                           )
                         )}
                       </td>
                       {columns.map((col, idx) => (
                         <td
                           key={idx}
-                          className={`px-3 py-3 text-${col.align || 'left'} ${col.key === 'displayName' ? '' : 'whitespace-nowrap'}`}
+                          className={`px-3 py-2.5 ${
+                            col.showBorderRight ? 'border-r border-gray-900' : ''
+                          } ${
+                            col.align === 'right' ? 'text-right' : 
+                            col.align === 'center' ? 'text-center' : 
+                            'text-left'
+                          } ${col.key === 'displayName' ? '' : 'whitespace-nowrap'}`}
                           onClick={(e) => col.key === 'actions' && e.stopPropagation()}
                         >
                           {col.key === 'displayName' ? (
-                            <div>
-                              <div className="font-medium text-white dark:text-white truncate text-sm">
-                                {holding.displayName}
+                            <div title={holding.displayName} className="min-w-0">
+                              <div className="font-medium text-gray-200 truncate text-xs leading-tight">
+                                {holding.displayName.split('-')[0].trim()}
                               </div>
-                              <div className="text-xs text-gray-400 dark:text-gray-400 flex items-center gap-1 truncate">
+                              <div className="text-[10px] text-gray-500 flex items-center gap-1 truncate mt-0.5">
                                 <span className="truncate">{holding.subtitle}</span>
                                 {hasMultiplePortfolios && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 whitespace-nowrap">
+                                  <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-blue-900 text-blue-300 whitespace-nowrap">
                                     {holding.holdings.length}
                                   </span>
                                 )}
@@ -537,11 +573,11 @@ export default function DashboardHoldings({
                               )}
                             </div>
                           ) : col.format ? (
-                            <span className="text-white dark:text-white">
+                            <span className="text-xs text-gray-300 font-mono">
                               {col.format(holding[col.key], holding)}
                             </span>
                           ) : (
-                            <span className="text-sm text-white dark:text-white">
+                            <span className="text-xs text-gray-300 font-mono">
                               {holding[col.key]}
                             </span>
                           )}
@@ -553,18 +589,24 @@ export default function DashboardHoldings({
                     {isExpanded && hasMultiplePortfolios && holding.holdings.map((portfolioHolding: any, idx: number) => (
                       <tr
                         key={`${holding.identifier}-${portfolioHolding.portfolio_id}-${idx}`}
-                        className="bg-gray-50 dark:bg-gray-800/50"
+                        className="bg-black hover:bg-gray-950"
                       >
                         <td className="px-2 py-2"></td>
                         {columns.map((col, colIdx) => (
                           <td
                             key={colIdx}
-                            className={`px-3 py-2 text-${col.align || 'left'} ${col.key === 'displayName' ? '' : 'whitespace-nowrap'}`}
+                            className={`px-3 py-2 ${
+                              col.showBorderRight ? 'border-r border-gray-900' : ''
+                            } ${
+                              col.align === 'right' ? 'text-right' : 
+                              col.align === 'center' ? 'text-center' : 
+                              'text-left'
+                            } ${col.key === 'displayName' ? '' : 'whitespace-nowrap'}`}
                           >
                             {col.key === 'displayName' ? (
-                              <div className="flex items-center gap-1 pl-4">
-                                <Tag className="w-3 h-3 text-blue-500" />
-                                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 truncate">
+                              <div className="flex items-center gap-1.5 pl-4">
+                                <Tag className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                                <span className="text-[10px] font-medium text-blue-400 truncate">
                                   {getPortfolioName(portfolioHolding.portfolio_id)}
                                 </span>
                               </div>
@@ -572,9 +614,9 @@ export default function DashboardHoldings({
                               <div className="relative">
                                 <button
                                   onClick={(e) => handleActionsClick(e, `${holding.identifier}-${portfolioHolding.portfolio_id}-${idx}`)}
-                                  className="actions-button p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                                  className="actions-button p-1 hover:bg-gray-700 rounded transition-colors"
                                 >
-                                  <MoreVertical className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                  <MoreVertical className="w-4 h-4 text-gray-500" />
                                 </button>
 
                                 {openActionsMenu === `${holding.identifier}-${portfolioHolding.portfolio_id}-${idx}` && menuPosition && (
@@ -603,11 +645,11 @@ export default function DashboardHoldings({
                                 )}
                               </div>
                             ) : col.format ? (
-                              <span className="text-gray-200 dark:text-gray-200">
+                              <span className="text-[10px] text-gray-400 font-mono">
                                 {col.format(getPortfolioHoldingValue(portfolioHolding, col.key), portfolioHolding)}
                               </span>
                             ) : (
-                              <span className="text-sm text-gray-200 dark:text-gray-200">
+                              <span className="text-[10px] text-gray-400 font-mono">
                                 {getPortfolioHoldingValue(portfolioHolding, col.key)}
                               </span>
                             )}

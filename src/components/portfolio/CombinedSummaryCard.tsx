@@ -11,11 +11,9 @@ interface CombinedSummaryCardProps {
 }
 
 export function CombinedSummaryCard({ summary, portfolioCount = 1, mode = 'single', xirr }: CombinedSummaryCardProps) {
-  console.log('CombinedSummaryCard received:', { summary, portfolioCount, mode, xirr })
   
   // Safety check: if summary is undefined, return null or a loading state
   if (!summary) {
-    console.warn('CombinedSummaryCard: summary is undefined')
     return null
   }
   

@@ -38,25 +38,25 @@ export function TotalValueSummary({
     {
       label: 'Total Portfolio Value',
       value: formatCurrency(totalValue),
-      icon: <Wallet className="w-6 h-6" />,
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400'
+      icon: <Wallet className="w-5 h-5" />,
+      iconBg: 'bg-gray-900',
+      iconColor: 'text-gray-400'
     },
     {
       label: 'Total Invested',
       value: formatCurrency(totalInvested),
-      icon: <DollarSign className="w-6 h-6" />,
-      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
-      iconColor: 'text-purple-600 dark:text-purple-400'
+      icon: <DollarSign className="w-5 h-5" />,
+      iconBg: 'bg-gray-900',
+      iconColor: 'text-gray-400'
     },
     {
       label: 'Total Gains/Loss',
       value: formatCurrency(Math.abs(totalGain)),
       change: totalGainPercent !== 0 ? `${totalGainPercent >= 0 ? '+' : ''}${totalGainPercent.toFixed(2)}%` : undefined,
       changeType: totalGain > 0 ? 'increase' : totalGain < 0 ? 'decrease' : 'neutral',
-      icon: totalGain >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />,
-      iconBg: totalGain >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30',
-      iconColor: totalGain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+      icon: totalGain >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />,
+      iconBg: 'bg-gray-900',
+      iconColor: totalGain >= 0 ? 'text-green-400' : 'text-red-400'
     }
   ]
 
@@ -66,9 +66,9 @@ export function TotalValueSummary({
       label: 'XIRR (Annualized)',
       value: `${xirr >= 0 ? '+' : ''}${xirr.toFixed(2)}%`,
       changeType: xirr > 0 ? 'increase' : xirr < 0 ? 'decrease' : 'neutral',
-      icon: <Target className="w-6 h-6" />,
-      iconBg: xirr >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30',
-      iconColor: xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+      icon: <Target className="w-5 h-5" />,
+      iconBg: 'bg-gray-900',
+      iconColor: xirr >= 0 ? 'text-green-400' : 'text-red-400'
     })
   }
 
@@ -76,13 +76,13 @@ export function TotalValueSummary({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-pulse">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+          <div key={i} className="bg-gray-950 border border-gray-900 rounded-lg p-4 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-gray-900 rounded-lg"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-3 bg-gray-900 rounded w-2/3"></div>
+                <div className="h-6 bg-gray-900 rounded w-1/2"></div>
               </div>
-              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             </div>
           </div>
         ))}
@@ -95,39 +95,39 @@ export function TotalValueSummary({
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+          className="bg-gray-950 border border-gray-900 rounded-lg p-4 hover:border-gray-800 transition-colors"
         >
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-4">
+            <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
+              <div className={stat.iconColor}>
+                {stat.icon}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-400 mb-0.5">
                 {stat.label}
               </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-lg font-bold text-gray-200">
                 {stat.value}
               </p>
               {stat.change && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 mt-0.5">
                   {stat.changeType === 'increase' ? (
-                    <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <TrendingUp className="w-3 h-3 text-green-400" />
                   ) : stat.changeType === 'decrease' ? (
-                    <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <TrendingDown className="w-3 h-3 text-red-400" />
                   ) : null}
-                  <span className={`text-sm font-medium ${
+                  <span className={`text-xs font-medium ${
                     stat.changeType === 'increase' 
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-green-400'
                       : stat.changeType === 'decrease'
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-gray-600 dark:text-gray-400'
+                      ? 'text-red-400'
+                      : 'text-gray-400'
                   }`}>
                     {stat.change}
                   </span>
                 </div>
               )}
-            </div>
-            <div className={`p-3 rounded-lg ${stat.iconBg}`}>
-              <div className={stat.iconColor}>
-                {stat.icon}
-              </div>
             </div>
           </div>
         </div>

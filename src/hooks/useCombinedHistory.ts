@@ -40,7 +40,7 @@ export function useCombinedHistory(
         throw new Error('No portfolios selected')
       }
       if (dateRange === 'all') {
-        return await PortfolioAPI.getCombinedCompleteHistory(ids)
+        return await PortfolioAPI.getCombinedCompleteHistory(ids, assetType)
       } else {
         const { startDate, endDate } = getDateRange(dateRange)
         return await PortfolioAPI.getCombinedHistory(ids, startDate, endDate, assetType)

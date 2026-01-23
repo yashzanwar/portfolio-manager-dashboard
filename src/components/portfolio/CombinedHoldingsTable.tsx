@@ -12,8 +12,6 @@ interface CombinedHoldingsTableProps {
 export function CombinedHoldingsTable({ funds, mode }: CombinedHoldingsTableProps) {
   const [expandedFunds, setExpandedFunds] = useState<Set<string>>(new Set())
 
-  console.log('CombinedHoldingsTable funds:', funds)
-
   const toggleFund = (isin: string) => {
     setExpandedFunds(prev => {
       const next = new Set(prev)

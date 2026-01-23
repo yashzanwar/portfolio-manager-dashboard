@@ -120,8 +120,8 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
     if (!active || !payload || !payload.length) return null
 
     return (
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+      <div className="bg-gray-950 p-3 rounded-lg shadow-lg border border-gray-900">
+        <p className="text-sm font-medium text-gray-300 mb-2">
           {payload[0]?.payload?.fullDate}
         </p>
         {payload.map((entry: any, index: number) => (
@@ -130,8 +130,8 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-gray-600 dark:text-gray-400">{entry.name}:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-gray-400">{entry.name}:</span>
+            <span className="font-medium text-gray-200">
               {formatCurrency(entry.value)}
             </span>
           </div>
@@ -145,13 +145,13 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
       <Card>
         <div className="p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            <h3 className="text-base md:text-lg font-semibold text-gray-300">
               Portfolio Value History
             </h3>
           </div>
           <div className="h-60 md:h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600" />
           </div>
         </div>
       </Card>
@@ -163,12 +163,12 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
       <Card>
         <div className="p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            <h3 className="text-base md:text-lg font-semibold text-gray-300">
               Portfolio Value History
             </h3>
           </div>
-          <div className="text-center py-8 text-red-600 dark:text-red-400">
+          <div className="text-center py-8 text-red-400">
             Failed to load chart data
           </div>
         </div>
@@ -181,12 +181,12 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
       <Card>
         <div className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-300">
               Portfolio Value History
             </h3>
           </div>
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8 text-gray-500">
             No historical data available
           </div>
         </div>
@@ -200,15 +200,15 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
         {/* Header with Title and Date Range Selector */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4 mb-4 md:mb-6">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            <h3 className="text-base md:text-lg font-semibold text-gray-300">
               Portfolio Value History
             </h3>
           </div>
 
           {/* Date Range Selector */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <div className="flex gap-1">
               {DATE_RANGES.map((range) => (
                 <button
@@ -217,7 +217,7 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
                   className={`px-2 md:px-3 py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                     selectedRange === range.value
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      : 'bg-black text-gray-400 hover:bg-gray-950 border border-gray-900'
                   }`}
                 >
                   {range.label}
@@ -232,9 +232,9 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
           <div className="mb-4 flex flex-wrap gap-3">
             <button
               onClick={() => setVisiblePortfolios(new Set())}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors"
             >
-              <div className="w-3 h-3 rounded-full bg-white dark:bg-gray-900" />
+              <div className="w-3 h-3 rounded-full bg-gray-400" />
               Total
             </button>
             {portfolios.map((portfolio) => (
@@ -243,20 +243,15 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
                 onClick={() => togglePortfolio(portfolio.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   visiblePortfolios.has(portfolio.id)
-                    ? 'bg-white dark:bg-gray-800 ring-2 ring-offset-2 dark:ring-offset-gray-900'
-                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-gray-950 border border-gray-800 text-gray-300'
+                    : 'bg-black border border-gray-900 text-gray-500 hover:bg-gray-950 hover:text-gray-400'
                 }`}
-                style={
-                  visiblePortfolios.has(portfolio.id)
-                    ? { ringColor: portfolio.color }
-                    : {}
-                }
               >
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: portfolio.color }}
                 />
-                <span className="text-gray-900 dark:text-white">{portfolio.name}</span>
+                <span>{portfolio.name}</span>
               </button>
             ))}
           </div>
@@ -267,14 +262,14 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
           <div className="min-w-[500px] h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-900" />
               <XAxis
                 dataKey="date"
-                className="text-xs text-gray-600 dark:text-gray-400"
+                className="text-xs text-gray-500"
                 tick={{ fill: 'currentColor' }}
               />
               <YAxis
-                className="text-xs text-gray-600 dark:text-gray-400"
+                className="text-xs text-gray-500"
                 tick={{ fill: 'currentColor' }}
                 domain={yAxisDomain}
                 tickFormatter={(value) => {
@@ -321,26 +316,26 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
 
         {/* Summary Stats */}
         {chartData.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-4 pt-4 border-t border-gray-900">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Start Value</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                <p className="text-xs text-gray-500">Start Value</p>
+                <p className="text-sm font-semibold text-gray-300">
                   {formatCurrency(chartData[0]?.total || 0)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Current Value</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                <p className="text-xs text-gray-500">Current Value</p>
+                <p className="text-sm font-semibold text-gray-300">
                   {formatCurrency(chartData[chartData.length - 1]?.total || 0)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Change</p>
+                <p className="text-xs text-gray-500">Change</p>
                 <p className={`text-sm font-semibold ${
                   (chartData[chartData.length - 1]?.total || 0) >= (chartData[0]?.total || 0)
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
+                    ? 'text-green-400'
+                    : 'text-red-400'
                 }`}>
                   {formatCurrency(
                     (chartData[chartData.length - 1]?.total || 0) - (chartData[0]?.total || 0)
@@ -348,11 +343,11 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">% Change</p>
+                <p className="text-xs text-gray-500">% Change</p>
                 <p className={`text-sm font-semibold ${
                   (chartData[chartData.length - 1]?.total || 0) >= (chartData[0]?.total || 0)
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
+                    ? 'text-green-400'
+                    : 'text-red-400'
                 }`}>
                   {chartData[0]?.total
                     ? (

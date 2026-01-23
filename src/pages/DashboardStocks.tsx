@@ -1,6 +1,5 @@
 import DashboardHoldings from './DashboardHoldings'
 import { formatCurrency, formatNumber, formatPercentage } from '../utils/formatters'
-import { TrendingUp, TrendingDown } from 'lucide-react'
 
 export default function DashboardStocks() {
   return (
@@ -13,56 +12,66 @@ export default function DashboardStocks() {
         {
           header: 'Stock',
           key: 'displayName',
-          align: 'left'
+          align: 'left',
+          showBorderRight: true
         },
         {
-          header: 'Shares',
+          header: 'Qty.',
           key: 'quantity',
-          align: 'center',
+          align: 'right',
           format: (value) => formatNumber(value)
         },
         {
-          header: 'Avg Buy Price',
+          header: 'Avg. cost',
           key: 'average_price',
-          align: 'center',
+          align: 'right',
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current Price',
+          header: 'LTP',
           key: 'current_price',
-          align: 'center',
-          format: (value) => formatCurrency(value)
+          align: 'right',
+          format: (value) => formatCurrency(value),
+          showBorderRight: true
         },
         {
           header: 'Invested',
           key: 'totalInvested',
-          align: 'center',
+          align: 'right',
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current Value',
+          header: 'Cur. val',
           key: 'currentValue',
-          align: 'center',
-          format: (value) => formatCurrency(value)
+          align: 'right',
+          format: (value) => formatCurrency(value),
+          showBorderRight: true
         },
         {
-          header: 'P&L / XIRR',
+          header: 'P&L',
           key: 'totalProfitLoss',
-          align: 'center',
-          format: (value, holding) => {
-            const xirr = holding.xirr ?? 0
+          align: 'right',
+          format: (value) => (
+            <span className={`font-medium ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatCurrency(value)}
+            </span>
+          )
+        },
+        {
+          header: 'XIRR',
+          key: 'xirr',
+          align: 'right',
+          format: (value) => {
+            if (value === null || value === undefined || Math.abs(value) > 1000) {
+              return <span className="text-gray-500">—</span>
+            }
             return (
-              <div className="text-center">
-                <div className={`font-medium ${value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(value)}
-                </div>
-                <div className={`text-xs flex items-center justify-center gap-1 ${xirr >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {xirr >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {formatPercentage(xirr)}
-                </div>
-              </div>
+              <span className={`${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatPercentage(value)}
+              </span>
             )
-          }
+          },
+          showBorderRight: true
         },
         {
           header: 'Actions',

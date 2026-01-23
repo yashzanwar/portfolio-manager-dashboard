@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { HoldingsDataV2, MutualFundHoldingV2, StockHoldingV2 } from '../../types/portfolioV2'
 
 interface HoldingsDisplayV2Props {
@@ -50,6 +50,7 @@ export function HoldingsDisplayV2({
 }: HoldingsDisplayV2Props) {
   const [expandedStocks, setExpandedStocks] = useState<Set<string>>(new Set())
   const [expandedMFs, setExpandedMFs] = useState<Set<string>>(new Set())
+  const [hideSmallHoldings, setHideSmallHoldings] = useState(false)
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -201,13 +202,41 @@ export function HoldingsDisplayV2({
   const aggregatedStocks = holdings.stocks ? aggregateStocks(holdings.stocks) : []
   const aggregatedMFs = holdings.mutual_funds ? aggregateMutualFunds(holdings.mutual_funds) : []
 
+  // Filter holdings based on quantity/units being greater than 0
+  const filteredStocks = hideSmallHoldings 
+    ? aggregatedStocks.filter(stock => stock.quantity > 0)
+    : aggregatedStocks
+  
+  const filteredMFs = hideSmallHoldings 
+    ? aggregatedMFs.filter(fund => fund.current_units > 0)
+    : aggregatedMFs
+
+  const hasAnyHoldings = aggregatedStocks.length > 0 || aggregatedMFs.length > 0
+
   return (
     <div className="space-y-6">
+      {/* Filter Toggle - Only show if there are holdings */}
+      {hasAnyHoldings && (
+        <div className="flex items-center justify-end gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <button
+            onClick={() => setHideSmallHoldings(!hideSmallHoldings)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            {hideSmallHoldings ? (
+              <Eye className="w-4 h-4" />
+            ) : (
+              <EyeOff className="w-4 h-4" />
+            )}
+            <span>{hideSmallHoldings ? 'Show All Holdings' : 'Hide Zero Qty Holdings'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Mutual Funds Section */}
-      {showMutualFunds && aggregatedMFs.length > 0 && (
+      {showMutualFunds && filteredMFs.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-            Mutual Funds ({aggregatedMFs.length})
+            Mutual Funds ({filteredMFs.length}{hideSmallHoldings && aggregatedMFs.length > filteredMFs.length ? ` of ${aggregatedMFs.length}` : ''})
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -222,7 +251,7 @@ export function HoldingsDisplayV2({
                 </tr>
               </thead>
               <tbody>
-                {aggregatedMFs.map((fund: AggregatedMutualFund) => {
+                {filteredMFs.map((fund: AggregatedMutualFund) => {
                   const isExpanded = expandedMFs.has(fund.isin)
                   const hasMultipleHoldings = fund.holdings.length > 1
                   
@@ -301,10 +330,10 @@ export function HoldingsDisplayV2({
       )}
 
       {/* Stocks Section */}
-      {showStocks && aggregatedStocks.length > 0 && (
+      {showStocks && filteredStocks.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-            Stocks ({aggregatedStocks.length})
+            Stocks ({filteredStocks.length}{hideSmallHoldings && aggregatedStocks.length > filteredStocks.length ? ` of ${aggregatedStocks.length}` : ''})
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -319,7 +348,7 @@ export function HoldingsDisplayV2({
                 </tr>
               </thead>
               <tbody>
-                {aggregatedStocks.map((stock: AggregatedStock) => {
+                {filteredStocks.map((stock: AggregatedStock) => {
                   const isExpanded = expandedStocks.has(stock.symbol)
                   const hasMultipleHoldings = stock.holdings.length > 1
                   

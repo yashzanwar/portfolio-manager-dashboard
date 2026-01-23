@@ -122,22 +122,13 @@ export default function ImportCAS() {
 
     setIsUploading(true)
     try {
-      console.log('Importing CAS data for portfolio:', selectedPortfolio.id)
-      console.log('CAS data structure:', {
-        hasInvestor: !!casData.investor,
-        hasMutualFunds: !!casData.mutual_funds,
-        mutualFundsCount: casData.mutual_funds?.length || 0
-      })
-      
       const response = await PortfolioAPI.importCAS(selectedPortfolio.id, casData)
-      console.log('Import response:', response)
       
       setImportResult(response)
       setStep('result')
       toast.success('CAS data imported successfully!')
     } catch (err: any) {
       console.error('Import error:', err)
-      console.error('Error response:', err.response)
       console.error('Error data:', err.response?.data)
       
       const errorMessage = err.response?.data?.message || err.message || 'Failed to import CAS data'

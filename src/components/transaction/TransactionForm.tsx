@@ -5,13 +5,14 @@ import { AddTransactionModal } from '../portfolio/AddTransactionModal'
 import { AssetClassSelection, AssetClass } from './AssetClassSelection'
 import { TransactionMethodSelection, TransactionMethod } from './TransactionMethodSelection'
 import { ImportCASForm } from './ImportCASForm'
+import { ImportStockBulkForm } from './ImportStockBulkForm'
 
 interface TransactionFormProps {
   onSuccess?: () => void
   onCancel?: () => void
 }
 
-type FlowStep = 'portfolio-selection' | 'asset-class' | 'transaction-method' | 'transaction-form' | 'import-cas'
+type FlowStep = 'portfolio-selection' | 'asset-class' | 'transaction-method' | 'transaction-form' | 'import-cas' | 'import-bulk'
 
 export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
   const { data: portfolios = [] } = usePortfolios()
@@ -45,6 +46,8 @@ export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
     setSelectedMethod(method)
     if (method === 'import-cas') {
       setCurrentStep('import-cas')
+    } else if (method === 'import-bulk') {
+      setCurrentStep('import-bulk')
     } else {
       setCurrentStep('transaction-form')
     }
@@ -244,7 +247,18 @@ export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
     )
   }
 
-  // Step 4b: Manual Transaction Form
+  // Step 4b: Import Stock Bulk Form
+  if (currentStep === 'import-bulk' && selectedPortfolioId) {
+    return (
+      <ImportStockBulkForm
+        portfolioId={selectedPortfolioId}
+        onSuccess={handleSuccess}
+        onBack={handleBackToMethod}
+      />
+    )
+  }
+
+  // Step 4c: Manual Transaction Form
   if (currentStep === 'transaction-form' && selectedPortfolioId) {
     return (
       <AddTransactionModal

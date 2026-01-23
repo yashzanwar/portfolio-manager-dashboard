@@ -53,14 +53,14 @@ export function AssetAllocationChart({ breakdown, isLoading = false }: AssetAllo
     if (active && payload?.[0]) {
       const data = payload[0]
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
+        <div className="bg-gray-950 border border-gray-900 rounded-lg shadow-lg p-3">
+          <p className="text-sm font-medium text-gray-300">
             {data.name}
           </p>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">
+          <p className="text-lg font-bold text-gray-200">
             {formatCurrency(data.value)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-400">
             {data.payload.percentage}% of total
           </p>
         </div>
@@ -99,12 +99,12 @@ export function AssetAllocationChart({ breakdown, isLoading = false }: AssetAllo
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6">
-        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-gray-950 border border-gray-900 rounded-lg p-4 md:p-6">
+        <h3 className="text-base md:text-lg font-semibold text-gray-300 mb-4">
           Asset Allocation
         </h3>
         <div className="h-60 md:h-80 flex items-center justify-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-gray-700"></div>
         </div>
       </div>
     )
@@ -112,11 +112,11 @@ export function AssetAllocationChart({ breakdown, isLoading = false }: AssetAllo
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-gray-950 border border-gray-900 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-300 mb-4">
           Asset Allocation
         </h3>
-        <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        <div className="h-80 flex items-center justify-center text-gray-500">
           <p className="text-sm">No asset data available</p>
         </div>
       </div>
@@ -124,8 +124,8 @@ export function AssetAllocationChart({ breakdown, isLoading = false }: AssetAllo
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <div className="bg-gray-950 border border-gray-900 rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-gray-300 mb-4">
         Asset Allocation
       </h3>
       

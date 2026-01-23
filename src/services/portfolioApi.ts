@@ -63,11 +63,7 @@ export class PortfolioAPI {
       formData.append('password', password)
     }
     
-    console.log('Sending PDF parse request:', { fileName: file.name, hasPassword: !!password })
-    
     const { data } = await apiClient.post('/cas/parse', formData)
-    
-    console.log('Parse response:', data)
     
     // Extract the data field from the parse response
     return data.data
@@ -130,9 +126,14 @@ export class PortfolioAPI {
   }
 
   // Get complete combined portfolio history
-  static async getCombinedCompleteHistory(portfolioIds: number[]): Promise<any> {
-    const idsParam = portfolioIds.join(',')
-    const response = await apiClient.get(`/portfolio-value/complete-history?ids=${idsParam}`)
+  static async getCombinedCompleteHistory(
+    portfolioIds: number[],
+    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK'
+  ): Promise<any> {
+    const params = new URLSearchParams({ ids: portfolioIds.join(',') })
+    if (assetType) params.append('assetType', assetType)
+    
+    const response = await apiClient.get(`/portfolio-value/complete-history?${params.toString()}`)
     return response.data
   }
 

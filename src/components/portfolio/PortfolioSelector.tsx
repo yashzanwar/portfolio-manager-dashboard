@@ -34,7 +34,6 @@ export function PortfolioSelector({
   }, [isOpen])
 
   const handleSelect = (portfolio: Portfolio) => {
-    console.log('Portfolio selected:', portfolio)
     onSelect(portfolio)
     setIsOpen(false)
   }

@@ -12,7 +12,6 @@ import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
 
 export default function Login() {
-  console.log('Login component rendering')
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const hasHydrated = useAuthStore((state) => state._hasHydrated)
@@ -20,12 +19,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  console.log('Login state:', { isAuthenticated, hasHydrated })
-
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (hasHydrated && isAuthenticated) {
-      console.log('Redirecting to dashboard - already authenticated')
       navigate('/dash', { replace: true })
     }
   }, [hasHydrated, isAuthenticated, navigate])

@@ -64,10 +64,10 @@ export function AssetClassSelection({ onSelect, onCancel }: AssetClassSelectionP
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-xl font-semibold text-gray-300 mb-2">
           Select Asset Class
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-400">
           Choose the type of asset for which you want to add a transaction
         </p>
       </div>
@@ -81,31 +81,31 @@ export function AssetClassSelection({ onSelect, onCancel }: AssetClassSelectionP
             className={`
               relative flex items-start gap-4 p-4 rounded-lg border-2 transition-all text-left
               ${assetClass.enabled 
-                ? 'border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer' 
-                : 'border-gray-200 dark:border-gray-800 opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'}
+                ? 'border-gray-900 hover:border-gray-800 hover:bg-black cursor-pointer bg-black' 
+                : 'border-gray-900 opacity-50 cursor-not-allowed bg-black'}
             `}
           >
             <div className={`
               flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center
               ${assetClass.enabled 
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}
+                ? 'bg-gray-900 text-gray-400' 
+                : 'bg-gray-900 text-gray-600'}
             `}>
               {assetClass.icon}
             </div>
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium text-gray-900 dark:text-white">
+                <h3 className="font-medium text-gray-300">
                   {assetClass.label}
                 </h3>
                 {!assetClass.enabled && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-900 border border-gray-800 text-gray-500">
                     Coming Soon
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 {assetClass.description}
               </p>
             </div>
@@ -114,10 +114,10 @@ export function AssetClassSelection({ onSelect, onCancel }: AssetClassSelectionP
       </div>
 
       {onCancel && (
-        <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end pt-4 border-t border-gray-900">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-900 rounded-lg transition-colors"
           >
             Cancel
           </button>

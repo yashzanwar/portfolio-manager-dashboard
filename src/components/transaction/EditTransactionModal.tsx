@@ -140,13 +140,13 @@ export function EditTransactionModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Transaction Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Transaction Type
             </label>
             <select
               value={formData.transactionType}
               onChange={(e) => handleChange('transactionType', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
             >
               {availableTypes.map(type => (
@@ -159,14 +159,14 @@ export function EditTransactionModal({
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Transaction Date
             </label>
             <input
               type="date"
               value={formData.transactionDate}
               onChange={(e) => handleChange('transactionDate', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
@@ -174,7 +174,7 @@ export function EditTransactionModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Units */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 {isStockTransaction ? 'Quantity' : 'Units'} {isStockTransaction && <span className="text-red-500">*</span>}
               </label>
               <input
@@ -182,7 +182,7 @@ export function EditTransactionModal({
                 step="0.001"
                 value={formData.units || ''}
                 onChange={(e) => handleChange('units', parseFloat(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required={isStockTransaction}
                 placeholder={isStockTransaction ? 'Number of shares' : 'Number of units'}
               />
@@ -191,7 +191,7 @@ export function EditTransactionModal({
             {/* Stock Price or NAV */}
             {isStockTransaction ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Stock Price <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -199,14 +199,14 @@ export function EditTransactionModal({
                   step="0.01"
                   value={formData.pricePerShare || ''}
                   onChange={(e) => handleChange('pricePerShare', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   required
                   placeholder="Price per share"
                 />
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   NAV
                 </label>
                 <input
@@ -214,7 +214,7 @@ export function EditTransactionModal({
                   step="0.0001"
                   value={formData.pricePerShare || ''}
                   onChange={(e) => handleChange('pricePerShare', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Net Asset Value"
                 />
               </div>
@@ -224,7 +224,7 @@ export function EditTransactionModal({
           {/* Brokerage (for stocks) */}
           {isStockTransaction && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Brokerage (Optional)
               </label>
               <input
@@ -232,7 +232,7 @@ export function EditTransactionModal({
                 step="0.01"
                 value={formData.brokerage || ''}
                 onChange={(e) => handleChange('brokerage', parseFloat(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Brokerage charges"
               />
             </div>
@@ -240,20 +240,20 @@ export function EditTransactionModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Description (Optional)
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border-0 rounded-lg bg-[#0a0a0a] text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
               placeholder="Add a note about this transaction..."
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-900">
             <Button
               type="button"
               variant="secondary"

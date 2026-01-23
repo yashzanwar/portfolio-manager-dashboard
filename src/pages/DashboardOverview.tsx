@@ -48,8 +48,8 @@ export default function DashboardOverview() {
   // Extract summary values
   const totalValue = overview?.current_value || 0
   const totalInvested = overview?.total_invested || 0
-  const totalGain = overview?.unrealized_profit_loss || 0
-  const totalGainPercent = overview?.unrealized_profit_loss_percentage || 0
+  const totalGain = overview?.total_profit_loss || 0
+  const totalGainPercent = overview?.total_profit_loss_percentage || 0
   const xirr = xirrData?.xirr
 
   // Transform V2 asset breakdown into asset cards
@@ -202,9 +202,9 @@ export default function DashboardOverview() {
       </div>
 
       {/* Development Note */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          <strong>V2 API Integration:</strong> Dashboard now uses the V2 summary API 
+      <div className="bg-gray-950 border border-gray-900 rounded-lg p-4">
+        <p className="text-xs text-gray-400">
+          <strong className="text-gray-300">V2 API Integration:</strong> Dashboard now uses the V2 summary API 
           (/portfolios/summary/v2) with asset type breakdown support for both mutual funds and stocks.
           {summaryV2 && (
             <span className="ml-2">
