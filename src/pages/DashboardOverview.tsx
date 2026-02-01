@@ -117,14 +117,14 @@ export default function DashboardOverview() {
   }, [summaryV2])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
             Dashboard
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 hidden md:block">
             Overview of your investment portfolio
           </p>
         </div>

@@ -9,6 +9,7 @@ import DashboardLayout from './pages/DashboardLayout'
 import DashboardOverview from './pages/DashboardOverview'
 import DashboardMutualFunds from './pages/DashboardMutualFunds'
 import DashboardStocks from './pages/DashboardStocks'
+import DashboardMetals from './pages/DashboardMetals'
 import DashboardTransactions from './pages/DashboardTransactions'
 import ManagePortfolios from './pages/ManagePortfolios'
 import ImportCAS from './pages/ImportCAS'
@@ -45,6 +46,7 @@ function AppRoutes() {
           <Route index element={<DashboardOverview />} />
           <Route path="mutual-funds" element={<DashboardMutualFunds />} />
           <Route path="stocks" element={<DashboardStocks />} />
+          <Route path="metals" element={<DashboardMetals />} />
           <Route path="transactions" element={<DashboardTransactions />} />
         </Route>
 

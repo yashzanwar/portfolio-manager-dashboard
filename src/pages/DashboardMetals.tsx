@@ -1,36 +1,35 @@
 import DashboardHoldings from './DashboardHoldings'
 import { formatCurrency, formatNumber, formatPercentage } from '../utils/formatters'
-import { TrendingUp, TrendingDown } from 'lucide-react'
 
-export default function DashboardMutualFunds() {
+export default function DashboardMetals() {
   return (
     <DashboardHoldings
-      assetType="MUTUAL_FUND"
-      title="Mutual Fund Holdings"
-      emptyMessage="No mutual funds found. Add your first mutual fund transaction to get started."
+      assetType="PRECIOUS_METAL"
+      title="Precious Metals Holdings"
+      emptyMessage="No precious metals found. Add your first gold or silver transaction to get started."
       showChart={true}
       columns={[
         {
-          header: 'Scheme',
+          header: 'Item',
           key: 'displayName',
           align: 'left',
           showBorderRight: true
         },
         {
-          header: 'Units',
-          key: 'current_units',
+          header: 'Qty. (g)',
+          key: 'current_quantity',
           align: 'right',
-          format: (value) => formatNumber(value, 3)
+          format: (value) => formatNumber(value, 3) // 3 decimals for grams
         },
         {
-          header: 'Avg NAV',
-          key: 'average_nav',
+          header: 'Avg. price',
+          key: 'average_price',
           align: 'right',
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current NAV',
-          key: 'current_nav',
+          header: 'Cur. price',
+          key: 'current_price',
           align: 'right',
           format: (value) => formatCurrency(value),
           showBorderRight: true
@@ -42,7 +41,7 @@ export default function DashboardMutualFunds() {
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Current value',
+          header: 'Cur. val',
           key: 'currentValue',
           align: 'right',
           format: (value) => formatCurrency(value),
@@ -80,13 +79,23 @@ export default function DashboardMutualFunds() {
           align: 'center'
         }
       ]}
-      getIdentifier={(holding) => holding.isin}
+      getIdentifier={(holding) => holding.scheme_code}
       getDisplayName={(holding) => {
-        const schemeName = holding.scheme_name || ''
-        const firstHyphenIndex = schemeName.indexOf('-')
-        return firstHyphenIndex > 0 ? schemeName.substring(0, firstHyphenIndex).trim() : schemeName
+        // Extract metal type and purity from scheme code (e.g., "GOLD_22K" -> "GOLD 22K")
+        const metalInfo = holding.scheme_code.replace('_', ' ')
+        
+        // If folio_number exists and is not a generic "METAL_" prefix, use it as item name
+        if (holding.folio_number && !holding.folio_number.startsWith('METAL_')) {
+          return `${metalInfo} - ${holding.folio_number}`
+        }
+        
+        // Otherwise just show metal info
+        return metalInfo
       }}
-      getSubtitle={(holding) => `${holding.folio_number} • ${holding.amc}`}
+      getSubtitle={(holding) => {
+        // Show purity and current quantity (e.g., "22K • 177.220g")
+        return `${holding.purity} • ${formatNumber(holding.current_quantity, 3)}g`
+      }}
     />
   )
 }

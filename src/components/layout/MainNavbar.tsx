@@ -1,6 +1,6 @@
 import { User, LogOut, Settings, Bell, Plus, Menu } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { PortfolioSelector } from './PortfolioSelector'
 
@@ -49,15 +49,16 @@ export function MainNavbar({ onAddTransaction, onToggleSidebar }: MainNavbarProp
               <Menu className="w-6 h-6 text-gray-400" />
             </button>
 
-            <div className="flex items-center gap-2">
+            <Link to="/dash" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">PM</span>
               </div>
               <h1 className="text-xl font-bold text-white hidden sm:block">
                 Portfolio Manager
               </h1>
-            </div>
+            </Link>
             
+            {/* Portfolio Selector - visible on desktop, will show separately on mobile */}
             <div className="hidden md:block">
               <PortfolioSelector />
             </div>

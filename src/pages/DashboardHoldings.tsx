@@ -5,6 +5,7 @@ import { Card } from '../components/common/Card'
 import { TableSkeleton, EmptyState } from '../components/common'
 import { StatCard } from '../components/StatCard'
 import { AddTransactionModal } from '../components/portfolio/AddTransactionModal'
+import { AddMetalTransactionModal } from '../components/portfolio/AddMetalTransactionModal'
 import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfolioChart'
 import { usePortfolioContext } from '../context/PortfolioContext'
 import { usePortfolios } from '../hooks/usePortfolios'
@@ -12,7 +13,7 @@ import { usePortfolioSummaryV2 } from '../hooks/usePortfolioV2'
 import { usePortfolioXIRR, useMultipleSchemeXIRR } from '../hooks/useXIRR'
 import { formatCurrency, formatPercentage } from '../utils/formatters'
 
-type AssetType = 'EQUITY_STOCK' | 'MUTUAL_FUND'
+type AssetType = 'EQUITY_STOCK' | 'MUTUAL_FUND' | 'PRECIOUS_METAL'
 
 interface ColumnConfig {
   header: string
@@ -81,6 +82,8 @@ export default function DashboardHoldings({
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [hideSmallHoldings, setHideSmallHoldings] = useState(true)
+  const [mobileReturnView, setMobileReturnView] = useState<'returns' | 'xirr'>('returns')
+  const [showMobileSortMenu, setShowMobileSortMenu] = useState(false)
   
   // Transaction modals
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
@@ -121,19 +124,29 @@ export default function DashboardHoldings({
         
         // Recalculate weighted averages for numeric fields
         columns.forEach(col => {
-          if (col.key !== 'actions' && typeof holding[col.key] === 'number') {
+          // Helper to get value from holding (handles both snake_case and camelCase)
+          const getHoldingValue = (key: string) => {
+            if (holding[key] !== undefined) return holding[key]
+            // Try camelCase version
+            const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+            return holding[camelKey]
+          }
+          
+          const value = getHoldingValue(col.key)
+          
+          if (col.key !== 'actions' && typeof value === 'number') {
             // For quantity/units, sum them
             if (col.key.includes('quantity') || col.key.includes('units') || col.key === 'current_units') {
-              existing[col.key] = (existing[col.key] || 0) + (holding[col.key] || 0)
+              existing[col.key] = (existing[col.key] || 0) + (value || 0)
             }
             // For average buy price/NAV, calculate weighted average using totalInvested
             else if (col.key === 'average_price' || col.key === 'average_nav') {
-              const totalQuantity = existing.current_units || existing.quantity || 1
+              const totalQuantity = existing.current_units || existing.current_quantity || existing.quantity || 1
               existing[col.key] = existing.totalInvested / totalQuantity
             }
             // For current price, calculate using currentValue
             else if (col.key === 'current_price' || col.key === 'current_nav') {
-              const totalQuantity = existing.current_units || existing.quantity || 1
+              const totalQuantity = existing.current_units || existing.current_quantity || existing.quantity || 1
               existing[col.key] = existing.currentValue / totalQuantity
             }
           }
@@ -159,8 +172,17 @@ export default function DashboardHoldings({
         
         // Copy over asset-specific fields
         columns.forEach(col => {
-          if (col.key !== 'actions' && holding[col.key] !== undefined) {
-            newHolding[col.key] = holding[col.key]
+          if (col.key !== 'actions') {
+            // Try snake_case first
+            if (holding[col.key] !== undefined) {
+              newHolding[col.key] = holding[col.key]
+            } else {
+              // Try camelCase version
+              const camelKey = col.key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+              if (holding[camelKey] !== undefined) {
+                newHolding[col.key] = holding[camelKey]
+              }
+            }
           }
         })
         
@@ -174,6 +196,8 @@ export default function DashboardHoldings({
   // Get holdings from summary
   const holdings = assetType === 'EQUITY_STOCK' 
     ? (summaryV2?.holdings?.stocks || [])
+    : assetType === 'PRECIOUS_METAL'
+    ? (summaryV2?.holdings?.metals || [])
     : (summaryV2?.holdings?.mutual_funds || [])
 
   // Extract scheme IDs for XIRR fetching
@@ -209,7 +233,7 @@ export default function DashboardHoldings({
   // Filter out holdings with zero quantity if toggle is enabled
   const filteredByValueHoldings = hideSmallHoldings
     ? filteredHoldings.filter(holding => {
-        const qty = holding.quantity || holding.current_units || 0
+        const qty = holding.quantity || holding.current_quantity || holding.current_units || 0
         return qty > 0
       })
     : filteredHoldings
@@ -363,12 +387,53 @@ export default function DashboardHoldings({
   const xirrValue = xirrData?.xirr || null
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Title */}
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
+    <div className="md:p-6 p-4 md:space-y-6 space-y-4">
+      {/* Title - Hidden on mobile */}
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white hidden md:block">{title}</h1>
 
-      {/* Summary Statistics - 4 Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Mobile Summary Card - Groww Style */}
+      <div className="md:hidden -mx-4">
+        {/* Current Value - Top Center */}
+        <div className="bg-gray-950 px-4 py-4 text-center">
+          <div className="text-sm text-gray-400 mb-1">Current value</div>
+          <div className="text-3xl font-bold text-white">
+            {formatCurrency(currentValue)}
+          </div>
+        </div>
+        
+        {/* Three Column Layout: Invested, P&L, XIRR */}
+        <div className="bg-gray-950 px-4 py-4 grid grid-cols-3 gap-2">
+          {/* Invested */}
+          <div>
+            <div className="text-xs text-gray-400 mb-1">Invested</div>
+            <div className="text-sm font-bold text-white">
+              {formatCurrency(totalInvested)}
+            </div>
+          </div>
+          
+          {/* Total P&L */}
+          <div className="text-center">
+            <div className="text-xs text-gray-400 mb-1">Total P&L</div>
+            <div className={`text-sm font-bold ${totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatCurrency(totalProfitLoss)}
+            </div>
+            <div className={`text-xs ${totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              ({formatPercentage(totalProfitLossPercentage)})
+            </div>
+          </div>
+          
+          {/* XIRR */}
+          <div className="text-right">
+            <div className="text-xs text-gray-400 mb-1">XIRR</div>
+            <div className={`text-sm font-bold ${(xirrData?.xirr ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {xirrData?.xirr != null ? `${xirrData.xirr.toFixed(2)}%` : 'N/A'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Summary Statistics - 4 Cards */}
+      <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-6 bg-gray-950 border-gray-900">
           <div className="text-sm text-gray-400 mb-2">Total investment</div>
           <div className="text-3xl font-bold text-white">
@@ -444,8 +509,148 @@ export default function DashboardHoldings({
       </Card>
 
       {/* Holdings Table */}
-      <Card className="overflow-hidden bg-black border-0">
-        <div>
+      <div className="md:mx-0 -mx-4 md:rounded-xl rounded-none">
+        <Card className="overflow-hidden bg-black border-0 !p-0 rounded-none md:rounded-xl">
+        {/* Mobile List View */}
+        <div className="md:hidden bg-black">
+          {/* Toggle Button */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 bg-gray-950">
+            <span className="text-sm text-gray-400">{sortedHoldings.length} holdings</span>
+            <div className="flex items-center gap-2 relative">
+              <button
+                onClick={() => setShowMobileSortMenu(!showMobileSortMenu)}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-800 text-gray-300 active:bg-gray-700 flex items-center gap-1"
+              >
+                Sort
+                {sortBy && (sortOrder === 'desc' ? '↓' : '↑')}
+              </button>
+              <button
+                onClick={() => setMobileReturnView(mobileReturnView === 'returns' ? 'xirr' : 'returns')}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-800 text-gray-300 active:bg-gray-700"
+              >
+                {mobileReturnView === 'returns' ? 'Returns %' : 'XIRR'}
+              </button>
+              
+              {/* Sort Menu Dropdown */}
+              {showMobileSortMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMobileSortMenu(false)}
+                  />
+                  <div className="absolute right-0 top-10 z-50 w-48 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-1">
+                    <button
+                      onClick={() => {
+                        setSortBy('displayName')
+                        setSortOrder(sortBy === 'displayName' && sortOrder === 'asc' ? 'desc' : 'asc')
+                        setShowMobileSortMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      Name
+                      {sortBy === 'displayName' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('currentValue')
+                        setSortOrder(sortBy === 'currentValue' && sortOrder === 'asc' ? 'desc' : 'asc')
+                        setShowMobileSortMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      Current Value
+                      {sortBy === 'currentValue' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('totalInvested')
+                        setSortOrder(sortBy === 'totalInvested' && sortOrder === 'asc' ? 'desc' : 'asc')
+                        setShowMobileSortMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      Invested Value
+                      {sortBy === 'totalInvested' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('totalProfitLoss')
+                        setSortOrder(sortBy === 'totalProfitLoss' && sortOrder === 'asc' ? 'desc' : 'asc')
+                        setShowMobileSortMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      Overall Return
+                      {sortBy === 'totalProfitLoss' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('xirr')
+                        setSortOrder(sortBy === 'xirr' && sortOrder === 'asc' ? 'desc' : 'asc')
+                        setShowMobileSortMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      XIRR
+                      {sortBy === 'xirr' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {sortedHoldings.map((holding) => (
+            <div 
+              key={holding.identifier}
+              className="px-3 py-3 border-b-2 border-gray-800"
+            >
+              {/* Title */}
+              <div className="text-base font-medium text-gray-200 mb-3 truncate">
+                {assetType === 'MUTUAL_FUND' 
+                  ? holding.displayName 
+                  : (holding.holdings[0]?.symbol || holding.holdings[0]?.isin || holding.identifier)
+                }
+              </div>
+              
+              {/* Three Column Layout */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Invested</div>
+                  <div className="text-sm font-medium text-gray-200">
+                    {formatCurrency(holding.totalInvested)}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 mb-1">Current</div>
+                  <div className="text-sm font-medium text-gray-200">
+                    {formatCurrency(holding.currentValue)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 mb-1">
+                    {mobileReturnView === 'returns' ? 'Overall Return' : 'XIRR'}
+                  </div>
+                  <div className={`text-sm font-semibold ${
+                    mobileReturnView === 'returns'
+                      ? (holding.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400')
+                      : (holding.xirr != null && holding.xirr >= 0 ? 'text-green-400' : 'text-red-400')
+                  }`}>
+                    {mobileReturnView === 'returns' 
+                      ? `${formatCurrency(holding.totalProfitLoss)} (${formatPercentage(holding.totalProfitLossPercentage)})`
+                      : (holding.xirr != null && Math.abs(holding.xirr) <= 1000 
+                          ? formatPercentage(holding.xirr) 
+                          : '—')
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
           <table className="w-full table-fixed">
             <thead className="bg-black border-b border-gray-900">
               <tr>
@@ -606,9 +811,16 @@ export default function DashboardHoldings({
                             {col.key === 'displayName' ? (
                               <div className="flex items-center gap-1.5 pl-4">
                                 <Tag className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                                <span className="text-[10px] font-medium text-blue-400 truncate">
-                                  {getPortfolioName(portfolioHolding.portfolio_id)}
-                                </span>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[10px] font-medium text-blue-400 truncate">
+                                    {getPortfolioName(portfolioHolding.portfolio_id)}
+                                  </span>
+                                  {portfolioHolding.folio_number && (
+                                    <span className="text-[9px] text-gray-500 italic truncate">
+                                      {portfolioHolding.folio_number}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             ) : col.key === 'actions' ? (
                               <div className="relative">
@@ -663,10 +875,32 @@ export default function DashboardHoldings({
             </tbody>
           </table>
         </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* Add Transaction Modal */}
-      {showAddTransactionModal && selectedPortfolioForTransaction && (
+      {showAddTransactionModal && selectedPortfolioForTransaction && assetType === 'PRECIOUS_METAL' && (
+        <AddMetalTransactionModal
+          isOpen={showAddTransactionModal}
+          onClose={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+          }}
+          portfolioId={selectedPortfolioForTransaction}
+          onSuccess={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+            window.location.reload()
+          }}
+          prefilledSchemeCode={selectedHoldingForTransaction?.scheme_code}
+          prefilledFolioNumber={selectedHoldingForTransaction?.folio_number}
+        />
+      )}
+
+      {/* Add Transaction Modal for MF and Stocks */}
+      {showAddTransactionModal && selectedPortfolioForTransaction && assetType !== 'PRECIOUS_METAL' && (
         <AddTransactionModal
           isOpen={showAddTransactionModal}
           onClose={() => {

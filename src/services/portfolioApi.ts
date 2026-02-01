@@ -140,7 +140,7 @@ export class PortfolioAPI {
   // V2 API - Get portfolio summary with asset type breakdown and optional holdings
   static async getPortfolioSummaryV2(
     portfolioIds: number[], 
-    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK',
+    assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK' | 'PRECIOUS_METAL',
     includeHoldings?: boolean
   ): Promise<PortfolioSummaryV2> {
     const params = new URLSearchParams()

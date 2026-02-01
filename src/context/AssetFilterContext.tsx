@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-export type AssetType = 'mutual-funds' | 'stocks' | 'crypto' | 'gold' | 'property' | 'fixed-income'
+export type AssetType = 'mutual-funds' | 'stocks' | 'crypto' | 'metals' | 'property' | 'fixed-income'
 
 interface AssetFilterContextType {
   selectedAssets: Set<AssetType>
@@ -15,7 +15,7 @@ interface AssetFilterContextType {
 const AssetFilterContext = createContext<AssetFilterContextType | undefined>(undefined)
 
 const STORAGE_KEY = 'selected_asset_types'
-const ALL_ASSETS: AssetType[] = ['mutual-funds', 'stocks', 'crypto', 'gold', 'property', 'fixed-income']
+const ALL_ASSETS: AssetType[] = ['mutual-funds', 'stocks', 'crypto', 'metals', 'property', 'fixed-income']
 
 export function AssetFilterProvider({ children }: { children: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams()

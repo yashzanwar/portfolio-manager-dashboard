@@ -1,4 +1,5 @@
 // Portfolio V2 API Types
+import { MetalHoldingV2 } from './metal'
 
 export interface OverviewV2 {
   total_invested: number
@@ -78,6 +79,7 @@ export interface PortfolioInfoV2 {
 export interface HoldingsDataV2 {
   mutual_funds?: MutualFundHoldingV2[]
   stocks?: StockHoldingV2[]
+  metals?: MetalHoldingV2[]
 }
 
 // Mutual Fund Holding

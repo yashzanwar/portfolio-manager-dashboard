@@ -13,11 +13,11 @@ interface CombinedPortfolioChartProps {
 }
 
 const DATE_RANGES: DateRange[] = [
-  { label: '7 Days', value: '7d', days: 7 },
-  { label: '30 Days', value: '30d', days: 30 },
-  { label: '90 Days', value: '90d', days: 90 },
-  { label: '1 Year', value: '1y', days: 365 },
-  { label: 'All Time', value: 'all' },
+  { label: '7D', value: '7d', days: 7 },
+  { label: '1M', value: '30d', days: 30 },
+  { label: '3M', value: '90d', days: 90 },
+  { label: '1Y', value: '1y', days: 365 },
+  { label: 'ALL', value: 'all' },
 ]
 
 const COLORS = [
@@ -195,26 +195,26 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
   }
 
   return (
-    <Card>
-      <div className="p-4 md:p-6">
-        {/* Header with Title and Date Range Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4 mb-4 md:mb-6">
+    <Card className="md:rounded-xl rounded-none">
+      <div className="p-3 md:p-6">
+        {/* Header - Title only on mobile, with date range on desktop */}
+        <div className="flex items-center justify-between mb-3 md:mb-6">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-gray-400" />
-            <h3 className="text-base md:text-lg font-semibold text-gray-300">
-              Portfolio Value History
+            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+            <h3 className="text-sm md:text-lg font-semibold text-gray-300">
+              Portfolio Value
             </h3>
           </div>
 
-          {/* Date Range Selector */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+          {/* Date Range Selector - Desktop only, shown below chart on mobile */}
+          <div className="hidden md:flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <div className="flex gap-1">
               {DATE_RANGES.map((range) => (
                 <button
                   key={range.value}
                   onClick={() => setSelectedRange(range.value)}
-                  className={`px-2 md:px-3 py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                     selectedRange === range.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-black text-gray-400 hover:bg-gray-950 border border-gray-900'
@@ -227,9 +227,9 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
           </div>
         </div>
 
-        {/* Portfolio Legend (for combined mode) */}
+        {/* Portfolio Legend (for combined mode) - hidden on mobile */}
         {mode === 'combined' && portfolios.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-3">
+          <div className="mb-4 hidden md:flex flex-wrap gap-3">
             <button
               onClick={() => setVisiblePortfolios(new Set())}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors"
@@ -258,29 +258,24 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
         )}
 
         {/* Chart */}
-        <div className="h-60 md:h-80 overflow-x-auto">
-          <div className="min-w-[500px] h-full">
+        <div className="h-48 md:h-80">
+          <div className="h-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-900" />
+              <LineChart data={chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-900" vertical={false} horizontal={false} />
               <XAxis
                 dataKey="date"
                 className="text-xs text-gray-500"
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: '#6b7280', fontSize: 9 }}
+                tickMargin={6}
+                axisLine={false}
+                tickLine={false}
               />
               <YAxis
-                className="text-xs text-gray-500"
-                tick={{ fill: 'currentColor' }}
+                hide
                 domain={yAxisDomain}
-                tickFormatter={(value) => {
-                  if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`
-                  if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`
-                  if (value >= 1000) return `₹${(value / 1000).toFixed(0)}k`
-                  return `₹${value.toFixed(0)}`
-                }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
 
               {/* Total Line - Color changes based on gain/loss */}
               <Line
@@ -288,9 +283,9 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
                 dataKey="total"
                 name="Total Value"
                 stroke={lineColor}
-                strokeWidth={3}
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 6 }}
+                activeDot={{ r: 4 }}
               />
 
               {/* Individual Portfolio Lines - Toggle based on selection */}
@@ -314,10 +309,71 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
           </div>
         </div>
 
-        {/* Summary Stats */}
+        {/* Mobile Date Range Selector - Below chart */}
+        <div className="flex md:hidden justify-center gap-2 mt-4">
+          {DATE_RANGES.map((range) => (
+            <button
+              key={range.value}
+              onClick={() => setSelectedRange(range.value)}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                selectedRange === range.value
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Summary Stats - Simplified for mobile */}
         {chartData.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-900">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-900">
+            {/* Mobile: 2 columns */}
+            <div className="grid grid-cols-2 gap-3 md:hidden">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase">Start</p>
+                <p className="text-sm font-semibold text-gray-300">
+                  {formatCurrency(chartData[0]?.total || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase">Current</p>
+                <p className="text-sm font-semibold text-gray-300">
+                  {formatCurrency(chartData[chartData.length - 1]?.total || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase">Change</p>
+                <p className={`text-sm font-semibold ${
+                  (chartData[chartData.length - 1]?.total || 0) >= (chartData[0]?.total || 0)
+                    ? 'text-green-400'
+                    : 'text-red-400'
+                }`}>
+                  {formatCurrency(
+                    (chartData[chartData.length - 1]?.total || 0) - (chartData[0]?.total || 0)
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase">% Change</p>
+                <p className={`text-sm font-semibold ${
+                  (chartData[chartData.length - 1]?.total || 0) >= (chartData[0]?.total || 0)
+                    ? 'text-green-400'
+                    : 'text-red-400'
+                }`}>
+                  {chartData[0]?.total
+                    ? (
+                        (((chartData[chartData.length - 1]?.total || 0) - chartData[0].total) /
+                          chartData[0].total) *
+                        100
+                      ).toFixed(2)
+                    : '0.00'}%
+                </p>
+              </div>
+            </div>
+            {/* Desktop: 4 columns */}
+            <div className="hidden md:grid grid-cols-4 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Start Value</p>
                 <p className="text-sm font-semibold text-gray-300">
@@ -355,8 +411,7 @@ export function CombinedPortfolioChart({ portfolioIds, mode, assetType }: Combin
                           chartData[0].total) *
                         100
                       ).toFixed(2)
-                    : '0.00'}
-                  %
+                    : '0.00'}%
                 </p>
               </div>
             </div>

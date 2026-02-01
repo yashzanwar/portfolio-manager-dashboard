@@ -1,4 +1,4 @@
-import { TrendingUp, Coins, Bitcoin, Home, Landmark, Briefcase } from 'lucide-react'
+import { TrendingUp, Coins, Bitcoin, Home, Landmark, Briefcase, Gem } from 'lucide-react'
 
 export type AssetClass = 'mutual-funds' | 'stocks' | 'crypto' | 'gold' | 'property' | 'fixed-income'
 
@@ -39,10 +39,10 @@ const assetClasses: AssetClassOption[] = [
   },
   {
     id: 'gold',
-    label: 'Gold',
-    icon: <Coins className="w-6 h-6" />,
-    description: 'Add gold/precious metals transactions',
-    enabled: false,
+    label: 'Precious Metals',
+    icon: <Gem className="w-6 h-6" />,
+    description: 'Add gold/silver transactions (24K, 22K, 18K, .999, .925)',
+    enabled: true,
   },
   {
     id: 'property',

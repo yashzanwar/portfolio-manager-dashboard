@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom'
+import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { MainNavbar } from '../components/layout/MainNavbar'
@@ -6,12 +6,30 @@ import { DashboardSidebar } from '../components/layout/DashboardSidebar'
 import { TransactionDrawer } from '../components/layout/TransactionDrawer'
 import { FloatingActionButton } from '../components/layout/FloatingActionButton'
 import { TransactionForm } from '../components/transaction/TransactionForm'
+import { BottomNavigation } from '../components/layout/BottomNavigation'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { PullToRefreshIndicator } from '../components/common/PullToRefreshIndicator'
 
 export default function DashboardLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const hasHydrated = useAuthStore((state) => state._hasHydrated)
   const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const location = useLocation()
+
+  // Pull to refresh functionality
+  const handleRefresh = async () => {
+    // Reload the current page by dispatching a custom event
+    window.dispatchEvent(new CustomEvent('pulltorefresh'))
+    // Force page reload
+    window.location.reload()
+  }
+
+  const { isPulling, isRefreshing, pullDistance } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+    maxPullDistance: 120
+  })
 
   // Close mobile sidebar when clicking outside or pressing ESC
   useEffect(() => {
@@ -52,6 +70,13 @@ export default function DashboardLayout() {
 
   return (
     <div className="h-screen flex flex-col bg-black">
+      {/* Pull to Refresh Indicator */}
+      <PullToRefreshIndicator
+        isPulling={isPulling}
+        isRefreshing={isRefreshing}
+        pullDistance={pullDistance}
+      />
+
       {/* Professional Navbar with Portfolio Selector */}
       <MainNavbar 
         onAddTransaction={() => setIsTransactionDrawerOpen(true)}
@@ -75,7 +100,7 @@ export default function DashboardLayout() {
         
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
+          <div className="md:p-6 p-0 pb-20 lg:pb-6">
             <div className="max-w-7xl mx-auto">
               <Outlet />
             </div>
@@ -102,6 +127,9 @@ export default function DashboardLayout() {
           onCancel={() => setIsTransactionDrawerOpen(false)}
         />
       </TransactionDrawer>
+
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNavigation />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { usePortfolios } from '../../hooks/usePortfolios'
 import { usePortfolioContext } from '../../context/PortfolioContext'
 import { AddTransactionModal } from '../portfolio/AddTransactionModal'
+import { AddMetalTransactionModal } from '../portfolio/AddMetalTransactionModal'
 import { AssetClassSelection, AssetClass } from './AssetClassSelection'
 import { TransactionMethodSelection, TransactionMethod } from './TransactionMethodSelection'
 import { ImportCASForm } from './ImportCASForm'
@@ -260,6 +261,19 @@ export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
 
   // Step 4c: Manual Transaction Form
   if (currentStep === 'transaction-form' && selectedPortfolioId) {
+    // Show metal transaction modal for gold
+    if (selectedAssetClass === 'gold') {
+      return (
+        <AddMetalTransactionModal
+          isOpen={true}
+          onClose={handleCancel}
+          portfolioId={selectedPortfolioId}
+          onSuccess={handleSuccess}
+        />
+      )
+    }
+    
+    // Show regular transaction modal for MF and stocks
     return (
       <AddTransactionModal
         isOpen={true}

@@ -58,7 +58,7 @@ const methodsByAssetClass: Record<AssetClass, TransactionMethodOption[]> = {
       id: 'manual',
       label: 'Manual Entry',
       icon: <Edit3 className="w-6 h-6" />,
-      description: 'Add gold purchase/sale transactions',
+      description: 'Add metal buy/sell transactions with weight and making charges',
     },
   ],
   'property': [

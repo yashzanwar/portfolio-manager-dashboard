@@ -44,7 +44,7 @@ export function DashboardSidebar({ isOpen = true, onClose }: DashboardSidebarPro
         { to: '/dash/mutual-funds', icon: <TrendingUp className="w-5 h-5" />, label: 'Mutual Funds' },
         { to: '/dash/stocks', icon: <Coins className="w-5 h-5" />, label: 'Stocks' },
         { to: '/dash/crypto', icon: <Bitcoin className="w-5 h-5" />, label: 'Crypto' },
-        { to: '/dash/gold', icon: <Coins className="w-5 h-5" />, label: 'Gold' },
+        { to: '/dash/metals', icon: <Coins className="w-5 h-5" />, label: 'Metals' },
         { to: '/dash/property', icon: <Home className="w-5 h-5" />, label: 'Property' },
         { to: '/dash/fixed-income', icon: <Landmark className="w-5 h-5" />, label: 'Fixed Income' },
       ]

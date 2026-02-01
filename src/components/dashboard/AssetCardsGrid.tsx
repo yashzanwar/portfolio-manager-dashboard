@@ -132,8 +132,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     route: '/dash/crypto'
   },
   {
-    type: 'gold',
-    label: 'Gold',
+    type: 'metals',
+    label: 'Metals',
     value: 800000,
     invested: 750000,
     gain: 50000,
@@ -141,7 +141,7 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     icon: <Coins className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
-    route: '/dash/gold'
+    route: '/dash/metals'
   },
   {
     type: 'property',

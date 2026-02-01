@@ -70,14 +70,14 @@ export default function ManagePortfolios() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 md:px-0">
         <div className="flex items-center justify-between">
           <div>
-            <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2 animate-pulse"></div>
-            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
+            <div className="h-8 md:h-9 bg-gray-200 dark:bg-gray-700 rounded w-32 md:w-48 mb-2 animate-pulse"></div>
+            <div className="h-4 md:h-5 bg-gray-200 dark:bg-gray-700 rounded w-48 md:w-64 animate-pulse"></div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {[...Array(3)].map((_, i) => (
             <PortfolioCardSkeleton key={i} />
           ))}
@@ -100,19 +100,19 @@ export default function ManagePortfolios() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <Briefcase className="w-5 h-5 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Manage Portfolios
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                Portfolios
               </h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
                 Create, edit, and organize your investment portfolios
               </p>
             </div>
@@ -121,6 +121,7 @@ export default function ManagePortfolios() {
         <Button
           variant="primary"
           onClick={() => setIsCreateModalOpen(true)}
+          className="w-full sm:w-auto"
         >
           <Plus className="w-5 h-5 mr-2" />
           Create Portfolio
@@ -128,51 +129,51 @@ export default function ManagePortfolios() {
       </div>
 
       {/* Stats Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 md:p-6 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Portfolios</p>
-              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1">{portfolios.length}</p>
+              <p className="text-xs md:text-sm text-blue-600 dark:text-blue-400 font-medium">Total Portfolios</p>
+              <p className="text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1">{portfolios.length}</p>
             </div>
-            <Briefcase className="w-12 h-12 text-blue-600 dark:text-blue-400 opacity-50" />
+            <Briefcase className="w-10 h-10 md:w-12 md:h-12 text-blue-600 dark:text-blue-400 opacity-50" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-6 border border-green-200 dark:border-green-800">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 md:p-6 border border-green-200 dark:border-green-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600 dark:text-green-400 font-medium">Active</p>
-              <p className="text-3xl font-bold text-green-900 dark:text-green-100 mt-1">
+              <p className="text-xs md:text-sm text-green-600 dark:text-green-400 font-medium">Active</p>
+              <p className="text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100 mt-1">
                 {portfolios.filter(p => !p.isArchived).length}
               </p>
             </div>
-            <Star className="w-12 h-12 text-green-600 dark:text-green-400 opacity-50" />
+            <Star className="w-10 h-10 md:w-12 md:h-12 text-green-600 dark:text-green-400 opacity-50" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 md:p-6 border border-purple-200 dark:border-purple-800 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Primary Portfolio</p>
-              <p className="text-lg font-semibold text-purple-900 dark:text-purple-100 mt-1 truncate">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs md:text-sm text-purple-600 dark:text-purple-400 font-medium">Primary Portfolio</p>
+              <p className="text-base md:text-lg font-semibold text-purple-900 dark:text-purple-100 mt-1 truncate">
                 {portfolios.find(p => p.isPrimary)?.portfolioName || 'Not set'}
               </p>
             </div>
-            <Star className="w-12 h-12 text-purple-600 dark:text-purple-400 opacity-50 fill-current" />
+            <Star className="w-10 h-10 md:w-12 md:h-12 text-purple-600 dark:text-purple-400 opacity-50 fill-current flex-shrink-0" />
           </div>
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search by name, PAN, or description..."
+          placeholder="Search portfolios..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          className="w-full pl-9 md:pl-10 pr-4 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
         />
       </div>
 
@@ -196,7 +197,7 @@ export default function ManagePortfolios() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredPortfolios.map((portfolio) => (
             <PortfolioCard
               key={portfolio.id}

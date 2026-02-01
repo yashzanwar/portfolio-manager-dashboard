@@ -39,7 +39,134 @@ export function CombinedHoldingsTable({ funds, mode }: CombinedHoldingsTableProp
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile List View - Dummy Cards */}
+        <div className="md:hidden bg-white dark:bg-gray-900">
+          {/* Dummy Item 1 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="text-base font-medium text-gray-900 dark:text-white">
+                  Axis Small Cap Fund
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  AXIS123
+                </div>
+              </div>
+              <div className="text-lg font-semibold text-green-600">
+                +12.5%
+              </div>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 my-3">
+              <span>Qty. 105</span>
+              <span className="mx-2">•</span>
+              <span>Avg. 570.15</span>
+            </div>
+            
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Invested</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹59,866</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Current</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹67,342</div>
+              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">P&L</span>
+                <span className="text-base font-semibold text-green-600">+₹7,476</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dummy Item 2 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="text-base font-medium text-gray-900 dark:text-white">
+                  ICICI Prudential Bluechip Fund
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  ICICI456
+                </div>
+              </div>
+              <div className="text-lg font-semibold text-red-600">
+                -8.2%
+              </div>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 my-3">
+              <span>Qty. 250</span>
+              <span className="mx-2">•</span>
+              <span>Avg. 312.50</span>
+            </div>
+            
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Invested</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹78,125</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Current</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹71,718</div>
+              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">P&L</span>
+                <span className="text-base font-semibold text-red-600">-₹6,407</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dummy Item 3 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="text-base font-medium text-gray-900 dark:text-white">
+                  SBI Large & Mid Cap Fund
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  SBI789
+                </div>
+              </div>
+              <div className="text-lg font-semibold text-green-600">
+                +5.3%
+              </div>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 my-3">
+              <span>Qty. 500</span>
+              <span className="mx-2">•</span>
+              <span>Avg. 125.80</span>
+            </div>
+            
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Invested</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹62,900</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Current</div>
+                <div className="text-base font-medium text-gray-900 dark:text-white">₹66,234</div>
+              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">P&L</span>
+                <span className="text-base font-semibold text-green-600">+₹3,334</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr>
