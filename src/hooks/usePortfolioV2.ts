@@ -6,12 +6,12 @@ import { PortfolioSummaryV2 } from '../types/portfolioV2'
  * Hook to fetch V2 portfolio summary with asset type breakdown
  * Supports both single and multiple portfolios
  * @param portfolioIds - Array of portfolio IDs to fetch
- * @param assetType - Optional filter: 'MUTUAL_FUND', 'EQUITY_STOCK', or 'PRECIOUS_METAL'
+ * @param assetType - Optional filter: 'MUTUAL_FUND', 'EQUITY_STOCK', 'PRECIOUS_METAL', or 'FIXED_DEPOSIT'
  * @param includeHoldings - Optional flag to include detailed holdings data
  */
 export function usePortfolioSummaryV2(
   portfolioIds?: number[], 
-  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK' | 'PRECIOUS_METAL',
+  assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK' | 'PRECIOUS_METAL' | 'FIXED_DEPOSIT',
   includeHoldings?: boolean
 ) {
   const ids = portfolioIds || []

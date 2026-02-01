@@ -6,6 +6,7 @@ import { TableSkeleton, EmptyState } from '../components/common'
 import { StatCard } from '../components/StatCard'
 import { AddTransactionModal } from '../components/portfolio/AddTransactionModal'
 import { AddMetalTransactionModal } from '../components/portfolio/AddMetalTransactionModal'
+import { AddFDModal } from '../components/portfolio/AddFDModal'
 import { CombinedPortfolioChart } from '../components/portfolio/CombinedPortfolioChart'
 import { usePortfolioContext } from '../context/PortfolioContext'
 import { usePortfolios } from '../hooks/usePortfolios'
@@ -13,13 +14,14 @@ import { usePortfolioSummaryV2 } from '../hooks/usePortfolioV2'
 import { usePortfolioXIRR, useMultipleSchemeXIRR } from '../hooks/useXIRR'
 import { formatCurrency, formatPercentage } from '../utils/formatters'
 
-type AssetType = 'EQUITY_STOCK' | 'MUTUAL_FUND' | 'PRECIOUS_METAL'
+type AssetType = 'EQUITY_STOCK' | 'MUTUAL_FUND' | 'PRECIOUS_METAL' | 'FIXED_DEPOSIT'
 
 interface ColumnConfig {
   header: string
   key: string
   align?: 'left' | 'right' | 'center'
   format?: (value: any, holding: any) => string | JSX.Element
+  showBorderRight?: boolean
 }
 
 interface DashboardHoldingsProps {
@@ -198,6 +200,8 @@ export default function DashboardHoldings({
     ? (summaryV2?.holdings?.stocks || [])
     : assetType === 'PRECIOUS_METAL'
     ? (summaryV2?.holdings?.metals || [])
+    : assetType === 'FIXED_DEPOSIT'
+    ? (summaryV2?.holdings?.fixed_deposits || [])
     : (summaryV2?.holdings?.mutual_funds || [])
 
   // Extract scheme IDs for XIRR fetching
@@ -878,7 +882,7 @@ export default function DashboardHoldings({
         </Card>
       </div>
 
-      {/* Add Transaction Modal */}
+      {/* Add Transaction Modal for Metals */}
       {showAddTransactionModal && selectedPortfolioForTransaction && assetType === 'PRECIOUS_METAL' && (
         <AddMetalTransactionModal
           isOpen={showAddTransactionModal}
@@ -899,8 +903,27 @@ export default function DashboardHoldings({
         />
       )}
 
+      {/* Add FD Modal */}
+      {showAddTransactionModal && selectedPortfolioForTransaction && assetType === 'FIXED_DEPOSIT' && (
+        <AddFDModal
+          isOpen={showAddTransactionModal}
+          onClose={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+          }}
+          portfolioId={selectedPortfolioForTransaction}
+          onSuccess={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+            window.location.reload()
+          }}
+        />
+      )}
+
       {/* Add Transaction Modal for MF and Stocks */}
-      {showAddTransactionModal && selectedPortfolioForTransaction && assetType !== 'PRECIOUS_METAL' && (
+      {showAddTransactionModal && selectedPortfolioForTransaction && assetType !== 'PRECIOUS_METAL' && assetType !== 'FIXED_DEPOSIT' && (
         <AddTransactionModal
           isOpen={showAddTransactionModal}
           onClose={() => {
