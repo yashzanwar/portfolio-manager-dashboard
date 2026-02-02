@@ -27,7 +27,6 @@ export function AddFDModal({
   const [interestRate, setInterestRate] = useState('')
   const [compoundingFrequency, setCompoundingFrequency] = useState<CompoundingFrequency>('QUARTERLY')
   const [interestPayoutType, setInterestPayoutType] = useState<InterestPayoutType>('REINVEST')
-  const [tenureMonths, setTenureMonths] = useState('')
   const [investmentDate, setInvestmentDate] = useState('')
   const [maturityDate, setMaturityDate] = useState('')
   const [notes, setNotes] = useState('')
@@ -41,21 +40,18 @@ export function AddFDModal({
     }
   }, [isOpen, investmentDate])
 
-  // Calculate maturity date when tenure changes
-  useEffect(() => {
-    if (investmentDate && tenureMonths) {
-      const date = new Date(investmentDate)
-      date.setMonth(date.getMonth() + parseInt(tenureMonths))
-      setMaturityDate(date.toISOString().split('T')[0])
-    }
-  }, [investmentDate, tenureMonths])
-
   const calculateMaturityValue = () => {
     const p = parseFloat(principal) || 0
     const r = parseFloat(interestRate) || 0
-    const t = parseInt(tenureMonths) || 0
     
-    if (p <= 0 || r <= 0 || t <= 0) return 0
+    if (p <= 0 || r <= 0 || !investmentDate || !maturityDate) return 0
+    
+    // Calculate tenure in months from dates
+    const startDate = new Date(investmentDate)
+    const endDate = new Date(maturityDate)
+    const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())
+    
+    if (monthsDiff <= 0) return 0
     
     // Get compounding frequency per year
     const n = compoundingFrequency === 'MONTHLY' ? 12 
@@ -64,7 +60,7 @@ export function AddFDModal({
               : 1
     
     // A = P(1 + r/n)^(n*t) where t is in years
-    const maturityValue = p * Math.pow(1 + (r / 100) / n, n * (t / 12))
+    const maturityValue = p * Math.pow(1 + (r / 100) / n, n * (monthsDiff / 12))
     
     return maturityValue
   }
@@ -76,7 +72,6 @@ export function AddFDModal({
 
     const principalAmount = parseFloat(principal)
     const rate = parseFloat(interestRate)
-    const tenure = parseInt(tenureMonths)
 
     // Validation
     if (!bankName || bankName.trim() === '') {
@@ -91,17 +86,17 @@ export function AddFDModal({
       toast.error('Please enter a valid interest rate (0-100%)')
       return
     }
-    if (!tenure || tenure <= 0) {
-      toast.error('Please enter tenure in months')
-      return
-    }
     if (!investmentDate) {
       toast.error('Please select investment date')
       return
     }
-    if (!maturityDate) {
-      toast.error('Please select maturity date')
-      return
+
+    // Calculate tenure from dates if maturity date is provided
+    let tenureMonths = null
+    if (maturityDate && investmentDate) {
+      const startDate = new Date(investmentDate)
+      const endDate = new Date(maturityDate)
+      tenureMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())
     }
 
     setSubmitting(true)
@@ -113,9 +108,9 @@ export function AddFDModal({
         interestRate: rate,
         compoundingFrequency: compoundingFrequency,
         interestPayoutType: interestPayoutType,
-        tenureMonths: tenure,
+        tenureMonths: tenureMonths,
         investmentDate: investmentDate,
-        maturityDate: maturityDate,
+        maturityDate: maturityDate || undefined,
         notes: notes.trim() || undefined,
       }
 
@@ -129,7 +124,6 @@ export function AddFDModal({
       setInterestRate('')
       setCompoundingFrequency('QUARTERLY')
       setInterestPayoutType('REINVEST')
-      setTenureMonths('')
       setNotes('')
       const today = new Date().toISOString().split('T')[0]
       setInvestmentDate(today)
@@ -194,19 +188,6 @@ export function AddFDModal({
             min="0.01"
             max="20"
             step="0.01"
-            required
-          />
-
-          {/* Tenure in Months */}
-          <Input
-            label="Tenure (months)"
-            icon={<Clock className="w-4 h-4" />}
-            type="number"
-            value={tenureMonths}
-            onChange={(e) => setTenureMonths(e.target.value)}
-            placeholder="e.g., 12, 24, 36"
-            min="1"
-            step="1"
             required
           />
         </div>
@@ -281,13 +262,11 @@ export function AddFDModal({
 
           {/* Maturity Date */}
           <Input
-            label="Maturity Date"
+            label="Maturity Date (Optional)"
             icon={<Calendar className="w-4 h-4" />}
             type="date"
             value={maturityDate}
             onChange={(e) => setMaturityDate(e.target.value)}
-            required
-            disabled={!tenureMonths}
           />
         </div>
 
