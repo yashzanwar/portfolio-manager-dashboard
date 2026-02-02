@@ -56,7 +56,7 @@ const assetClasses: AssetClassOption[] = [
     label: 'Fixed Income',
     icon: <Landmark className="w-6 h-6" />,
     description: 'Add bonds, FDs, and other fixed income',
-    enabled: false,
+    enabled: true,
   },
 ]
 

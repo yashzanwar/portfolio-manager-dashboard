@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import { AuthService } from './auth.service'
 import type { QueryClient } from '@tanstack/react-query'
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = 'http://127.0.0.1:8080/api'
 
 // Store queryClient reference for logout
 let queryClientRef: QueryClient | null = null

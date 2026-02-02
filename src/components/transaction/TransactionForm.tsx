@@ -3,6 +3,7 @@ import { usePortfolios } from '../../hooks/usePortfolios'
 import { usePortfolioContext } from '../../context/PortfolioContext'
 import { AddTransactionModal } from '../portfolio/AddTransactionModal'
 import { AddMetalTransactionModal } from '../portfolio/AddMetalTransactionModal'
+import { AddFDModal } from '../portfolio/AddFDModal'
 import { AssetClassSelection, AssetClass } from './AssetClassSelection'
 import { TransactionMethodSelection, TransactionMethod } from './TransactionMethodSelection'
 import { ImportCASForm } from './ImportCASForm'
@@ -265,6 +266,18 @@ export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
     if (selectedAssetClass === 'gold') {
       return (
         <AddMetalTransactionModal
+          isOpen={true}
+          onClose={handleCancel}
+          portfolioId={selectedPortfolioId}
+          onSuccess={handleSuccess}
+        />
+      )
+    }
+    
+    // Show FD modal for fixed-income
+    if (selectedAssetClass === 'fixed-income') {
+      return (
+        <AddFDModal
           isOpen={true}
           onClose={handleCancel}
           portfolioId={selectedPortfolioId}

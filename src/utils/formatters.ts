@@ -40,8 +40,24 @@ export const getInitials = (name: string): string => {
     .substring(0, 2)
 }
 
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
+export const formatDate = (dateString: string | number[] | undefined | null): string => {
+  if (!dateString) return 'N/A'
+  
+  let date: Date
+  
+  // Handle array format [year, month, day] from Java LocalDate
+  if (Array.isArray(dateString)) {
+    if (dateString.length >= 3) {
+      // Month in Date constructor is 0-indexed, so subtract 1
+      date = new Date(dateString[0], dateString[1] - 1, dateString[2])
+    } else {
+      return 'N/A'
+    }
+  } else {
+    date = new Date(dateString)
+  }
+  
+  if (isNaN(date.getTime())) return 'N/A'
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
     month: 'short',

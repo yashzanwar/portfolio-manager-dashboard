@@ -950,6 +950,25 @@ export default function DashboardHoldings({
           prefilledFolioNumber={selectedHoldingForTransaction?.folio_number}
         />
       )}
+
+      {/* Add Transaction Modal for Fixed Deposits */}
+      {showAddTransactionModal && selectedPortfolioForTransaction && assetType === 'FIXED_DEPOSIT' && (
+        <AddFDModal
+          isOpen={showAddTransactionModal}
+          onClose={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+          }}
+          portfolioId={selectedPortfolioForTransaction}
+          onSuccess={() => {
+            setShowAddTransactionModal(false)
+            setSelectedPortfolioForTransaction(undefined)
+            setSelectedHoldingForTransaction(null)
+            window.location.reload()
+          }}
+        />
+      )}
       
       {/* Portfolio Selector Modal */}
       {showAddTransactionModal && !selectedPortfolioForTransaction && (

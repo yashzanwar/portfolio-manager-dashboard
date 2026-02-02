@@ -22,16 +22,13 @@ export default function DashboardFixedDeposits() {
           format: (value) => formatCurrency(value)
         },
         {
-          header: 'Interest Rate',
-          key: 'interestRate',
-          align: 'right',
-          format: (value) => formatPercentage(value)
-        },
-        {
           header: 'Maturity Date',
           key: 'maturityDate',
           align: 'right',
-          format: (value) => formatDate(value),
+          format: (value, holding) => {
+            const maturityDate = holding.maturityDate || holding.maturity_date
+            return maturityDate ? formatDate(maturityDate) : '—'
+          },
           showBorderRight: true
         },
         {
@@ -48,10 +45,17 @@ export default function DashboardFixedDeposits() {
           showBorderRight: true
         },
         {
-          header: 'Interest Earned',
-          key: 'accruedInterest',
+          header: 'Total P&L',
+          key: 'totalProfitLoss',
           align: 'right',
-          format: (value) => formatCurrency(value)
+          format: (value, holding) => {
+            const profitLoss = value || 0
+            return (
+              <span className={`${profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatCurrency(profitLoss)}
+              </span>
+            )
+          }
         },
         {
           header: 'XIRR',
@@ -99,12 +103,15 @@ export default function DashboardFixedDeposits() {
         return fdName
       }}
       getSubtitle={(holding) => {
-        const investDate = formatDate(holding.investmentDate || holding.investment_date)
-        const maturityDate = formatDate(holding.maturityDate || holding.maturity_date)
-        const rate = formatPercentage(holding.interestRate || holding.interest_rate)
+        const investDate = holding.investmentDate || holding.investment_date
+        const maturityDate = holding.maturityDate || holding.maturity_date
+        const rate = formatPercentage(holding.interestRate || holding.interest_rate || 0)
         const compounding = holding.compoundingFrequency || holding.compounding_frequency || 'QUARTERLY'
         
-        return `${investDate} → ${maturityDate} • ${rate} • ${compounding}`
+        const investDateStr = investDate ? formatDate(investDate) : '—'
+        const maturityDateStr = maturityDate ? formatDate(maturityDate) : '—'
+        
+        return `${investDateStr} → ${maturityDateStr} • ${rate} • ${compounding}`
       }}
     />
   )

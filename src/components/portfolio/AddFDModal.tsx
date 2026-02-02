@@ -4,7 +4,7 @@ import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
 import toast from 'react-hot-toast'
-import { api } from '../../services/api'
+import { apiClient } from '../../services/api'
 
 interface AddFDModalProps {
   isOpen: boolean
@@ -108,18 +108,18 @@ export function AddFDModal({
 
     try {
       const payload = {
-        bank_name: bankName.trim(),
-        amount: principalAmount,
-        interest_rate: rate,
-        compounding_frequency: compoundingFrequency,
-        interest_payout_type: interestPayoutType,
-        tenure_months: tenure,
-        investment_date: investmentDate,
-        maturity_date: maturityDate,
+        bankName: bankName.trim(),
+        principal: principalAmount,
+        interestRate: rate,
+        compoundingFrequency: compoundingFrequency,
+        interestPayoutType: interestPayoutType,
+        tenureMonths: tenure,
+        investmentDate: investmentDate,
+        maturityDate: maturityDate,
         notes: notes.trim() || undefined,
       }
 
-      await api.post(`/api/portfolios/${portfolioId}/fixed-deposits`, payload)
+      await apiClient.post(`/portfolios/${portfolioId}/fixed-deposits`, payload)
       
       toast.success(`Fixed Deposit created successfully! ₹${principalAmount.toLocaleString('en-IN')}`)
 
