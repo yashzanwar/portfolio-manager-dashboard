@@ -175,14 +175,20 @@ export default function DashboardHoldings({
         // Copy over asset-specific fields
         columns.forEach(col => {
           if (col.key !== 'actions') {
-            // Try snake_case first
+            // Try exact key first
             if (holding[col.key] !== undefined) {
               newHolding[col.key] = holding[col.key]
             } else {
-              // Try camelCase version
-              const camelKey = col.key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
-              if (holding[camelKey] !== undefined) {
-                newHolding[col.key] = holding[camelKey]
+              // Try snake_case version
+              const snakeKey = col.key.replace(/([A-Z])/g, '_$1').toLowerCase()
+              if (holding[snakeKey] !== undefined) {
+                newHolding[col.key] = holding[snakeKey]
+              } else {
+                // Try camelCase version
+                const camelKey = col.key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+                if (holding[camelKey] !== undefined) {
+                  newHolding[col.key] = holding[camelKey]
+                }
               }
             }
           }
@@ -237,6 +243,10 @@ export default function DashboardHoldings({
   // Filter out holdings with zero quantity if toggle is enabled
   const filteredByValueHoldings = hideSmallHoldings
     ? filteredHoldings.filter(holding => {
+        // For Fixed Deposits, don't filter by quantity - show all active/non-matured FDs
+        if (assetType === 'FIXED_DEPOSIT') {
+          return true
+        }
         const qty = holding.quantity || holding.current_quantity || holding.current_units || 0
         return qty > 0
       })
