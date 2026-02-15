@@ -82,7 +82,7 @@ export function AddFDModal({
       toast.error('Please enter a valid principal amount')
       return
     }
-    if (!rate || rate <= 0 || rate > 100) {
+    if (rate === null || rate === undefined || rate < 0 || rate > 100) {
       toast.error('Please enter a valid interest rate (0-100%)')
       return
     }
@@ -185,7 +185,7 @@ export function AddFDModal({
             value={interestRate}
             onChange={(e) => setInterestRate(e.target.value)}
             placeholder="e.g., 7.5"
-            min="0.01"
+            min="0"
             max="20"
             step="0.01"
             required

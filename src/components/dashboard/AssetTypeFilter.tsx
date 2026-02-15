@@ -1,5 +1,5 @@
 import { useAssetFilter, AssetType } from '../../context/AssetFilterContext'
-import { TrendingUp, Bitcoin, Landmark, Home, Coins, DollarSign } from 'lucide-react'
+import { TrendingUp, Coins, Landmark } from 'lucide-react'
 
 interface AssetTypeConfig {
   type: AssetType
@@ -9,6 +9,7 @@ interface AssetTypeConfig {
   bgColor: string
 }
 
+// Only show currently supported asset types
 const assetTypes: AssetTypeConfig[] = [
   {
     type: 'mutual-funds',
@@ -25,25 +26,11 @@ const assetTypes: AssetTypeConfig[] = [
     bgColor: 'bg-purple-100 dark:bg-purple-900/30'
   },
   {
-    type: 'crypto',
-    label: 'Crypto',
-    icon: <Bitcoin className="w-4 h-4" />,
-    color: 'text-orange-700 dark:text-orange-400',
-    bgColor: 'bg-orange-100 dark:bg-orange-900/30'
-  },
-  {
-    type: 'gold',
-    label: 'Gold',
+    type: 'metals',
+    label: 'Metals',
     icon: <Coins className="w-4 h-4" />,
     color: 'text-yellow-700 dark:text-yellow-400',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/30'
-  },
-  {
-    type: 'property',
-    label: 'Property',
-    icon: <Home className="w-4 h-4" />,
-    color: 'text-green-700 dark:text-green-400',
-    bgColor: 'bg-green-100 dark:bg-green-900/30'
   },
   {
     type: 'fixed-income',
@@ -57,6 +44,14 @@ const assetTypes: AssetTypeConfig[] = [
 export function AssetTypeFilter() {
   const { selectedAssets, toggleAsset, selectAllAssets, isAllSelected } = useAssetFilter()
 
+  const handleSelectAllClick = () => {
+    if (isAllSelected) {
+      // Don't allow clearing all - instead do nothing or show a message
+      return
+    }
+    selectAllAssets()
+  }
+
   return (
     <div className="bg-gray-950 border border-gray-900 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
@@ -64,10 +59,15 @@ export function AssetTypeFilter() {
           Asset Types
         </h3>
         <button
-          onClick={selectAllAssets}
-          className="text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors"
+          onClick={handleSelectAllClick}
+          disabled={isAllSelected}
+          className={`text-xs font-medium transition-colors ${
+            isAllSelected 
+              ? 'text-gray-600 cursor-not-allowed' 
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
         >
-          {isAllSelected ? 'Clear All' : 'Select All'}
+          Select All
         </button>
       </div>
 

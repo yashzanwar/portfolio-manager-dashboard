@@ -30,6 +30,8 @@ export interface MetalHoldingV2 {
   realized_profit_loss_percentage: number
   unrealized_profit_loss_percentage: number
   total_profit_loss_percentage: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
   current_quantity: number // grams (from backend)
   quantity?: number // alias for current_quantity for UI compatibility
   average_price: number // per gram

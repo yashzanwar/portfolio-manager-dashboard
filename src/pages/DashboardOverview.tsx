@@ -5,10 +5,10 @@ import { AssetTypeFilter } from '../components/dashboard/AssetTypeFilter'
 import { TotalValueSummary } from '../components/dashboard/TotalValueSummary'
 import { AssetAllocationChart } from '../components/dashboard/AssetAllocationChart'
 import { AssetCardsGrid } from '../components/dashboard/AssetCardsGrid'
-import { Info, TrendingUp, Coins } from 'lucide-react'
+import { Info, TrendingUp, Coins, Landmark } from 'lucide-react'
 import { isSinglePortfolio, AssetTypeBreakdownV2 } from '../types/portfolioV2'
 import { useMemo } from 'react'
-import { AssetType } from '../context/AssetFilterContext'
+import { AssetType, useAssetFilter } from '../context/AssetFilterContext'
 
 interface AssetCardData {
   type: AssetType
@@ -17,6 +17,8 @@ interface AssetCardData {
   invested: number
   gain: number
   gainPercent: number
+  dayProfitLoss: number
+  dayProfitLossPercent: number
   icon: React.ReactNode
   color: string
   bgColor: string
@@ -25,6 +27,7 @@ interface AssetCardData {
 
 export default function DashboardOverview() {
   const { selectedPortfolioIds } = usePortfolioContext()
+  const { selectedAssets } = useAssetFilter()
   
   // Fetch V2 portfolio summary data
   const { data: summaryV2, isLoading } = usePortfolioSummaryV2(
@@ -39,24 +42,91 @@ export default function DashboardOverview() {
   // Check if user has selected portfolios
   const hasSelectedPortfolios = selectedPortfolioIds.length > 0
 
-  // Extract overview data from V2 API response
-  const overview = useMemo(() => {
-    if (!summaryV2) return null
-    return isSinglePortfolio(summaryV2) ? summaryV2.overview : summaryV2.aggregate_overview
-  }, [summaryV2])
+  // Map frontend asset types to backend asset types
+  const assetTypeMapping: Record<AssetType, string[]> = {
+    'mutual-funds': ['MUTUAL_FUND'],
+    'stocks': ['EQUITY_STOCK', 'STOCK'],
+    'crypto': ['CRYPTOCURRENCY'],
+    'metals': ['PRECIOUS_METAL', 'GOLD_PHYSICAL', 'SILVER_PHYSICAL'],
+    'property': ['REAL_ESTATE'],
+    'fixed-income': ['FIXED_DEPOSIT', 'BOND']
+  }
 
-  // Extract summary values
-  const totalValue = overview?.current_value || 0
-  const totalInvested = overview?.total_invested || 0
-  const totalGain = overview?.total_profit_loss || 0
-  const totalGainPercent = overview?.total_profit_loss_percentage || 0
+  // Get backend asset types that should be included based on selected filters
+  const includedBackendAssetTypes = useMemo(() => {
+    const types = new Set<string>()
+    selectedAssets.forEach(frontendType => {
+      const backendTypes = assetTypeMapping[frontendType] || []
+      backendTypes.forEach(t => types.add(t))
+    })
+    return types
+  }, [selectedAssets])
+
+  // Filter breakdown by selected asset types
+  const filteredBreakdown = useMemo(() => {
+    if (!summaryV2?.breakdown_by_asset_type) return undefined
+    
+    const filtered: Record<string, AssetTypeBreakdownV2> = {}
+    Object.entries(summaryV2.breakdown_by_asset_type).forEach(([assetType, data]) => {
+      if (includedBackendAssetTypes.has(assetType)) {
+        filtered[assetType] = data
+      }
+    })
+    return Object.keys(filtered).length > 0 ? filtered : undefined
+  }, [summaryV2?.breakdown_by_asset_type, includedBackendAssetTypes])
+
+  // Calculate filtered totals from the filtered breakdown
+  const filteredTotals = useMemo(() => {
+    if (!filteredBreakdown) {
+      return {
+        totalValue: 0,
+        totalInvested: 0,
+        totalGain: 0,
+        totalGainPercent: 0,
+        dayProfitLoss: 0,
+        dayProfitLossPercent: 0
+      }
+    }
+
+    const totals = Object.values(filteredBreakdown).reduce(
+      (acc, data) => ({
+        totalValue: acc.totalValue + data.current_value,
+        totalInvested: acc.totalInvested + data.total_invested,
+        totalGain: acc.totalGain + data.total_gains,
+        dayProfitLoss: acc.dayProfitLoss + (data.one_day_profit_loss || 0),
+        previousValueTotal: acc.previousValueTotal + (data.current_value - (data.one_day_profit_loss || 0))
+      }),
+      { totalValue: 0, totalInvested: 0, totalGain: 0, dayProfitLoss: 0, previousValueTotal: 0 }
+    )
+
+    const totalGainPercent = totals.totalInvested > 0 
+      ? (totals.totalGain / totals.totalInvested) * 100 
+      : 0
+
+    const dayProfitLossPercent = totals.previousValueTotal > 0
+      ? (totals.dayProfitLoss / totals.previousValueTotal) * 100
+      : 0
+
+    return {
+      ...totals,
+      totalGainPercent,
+      dayProfitLossPercent
+    }
+  }, [filteredBreakdown])
+
+  // Use filtered totals instead of overview totals
+  const totalValue = filteredTotals.totalValue
+  const totalInvested = filteredTotals.totalInvested
+  const totalGain = filteredTotals.totalGain
+  const totalGainPercent = filteredTotals.totalGainPercent
+  const dayProfitLoss = filteredTotals.dayProfitLoss
+  const dayProfitLossPercent = filteredTotals.dayProfitLossPercent
   const xirr = xirrData?.xirr
 
   // Transform V2 asset breakdown into asset cards
   const assetCards = useMemo(() => {
-    if (!summaryV2?.breakdown_by_asset_type) return undefined
+    if (!filteredBreakdown) return undefined
 
-    const breakdown = summaryV2.breakdown_by_asset_type
     const cards: AssetCardData[] = []
 
     // Map for asset type configurations
@@ -91,11 +161,51 @@ export default function DashboardOverview() {
         color: 'text-purple-600 dark:text-purple-400',
         bgColor: 'bg-purple-100 dark:bg-purple-900/30',
         route: '/dash/stocks'
+      },
+      'PRECIOUS_METAL': {
+        type: 'metals' as AssetType,
+        label: 'Metals',
+        icon: <Coins className="w-6 h-6" />,
+        color: 'text-yellow-600 dark:text-yellow-400',
+        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+        route: '/dash/metals'
+      },
+      'GOLD_PHYSICAL': {
+        type: 'metals' as AssetType,
+        label: 'Gold',
+        icon: <Coins className="w-6 h-6" />,
+        color: 'text-yellow-600 dark:text-yellow-400',
+        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+        route: '/dash/metals'
+      },
+      'SILVER_PHYSICAL': {
+        type: 'metals' as AssetType,
+        label: 'Silver',
+        icon: <Coins className="w-6 h-6" />,
+        color: 'text-gray-600 dark:text-gray-400',
+        bgColor: 'bg-gray-100 dark:bg-gray-900/30',
+        route: '/dash/metals'
+      },
+      'FIXED_DEPOSIT': {
+        type: 'fixed-income' as AssetType,
+        label: 'Fixed Deposits',
+        icon: <Landmark className="w-6 h-6" />,
+        color: 'text-indigo-600 dark:text-indigo-400',
+        bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
+        route: '/dash/fixed-deposits'
+      },
+      'BOND': {
+        type: 'fixed-income' as AssetType,
+        label: 'Bonds',
+        icon: <Landmark className="w-6 h-6" />,
+        color: 'text-indigo-600 dark:text-indigo-400',
+        bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
+        route: '/dash/fixed-deposits'
       }
     }
 
     // Convert each asset type in the breakdown
-    Object.entries(breakdown).forEach(([assetType, data]: [string, AssetTypeBreakdownV2]) => {
+    Object.entries(filteredBreakdown).forEach(([assetType, data]: [string, AssetTypeBreakdownV2]) => {
       const config = assetConfig[assetType]
       if (config) {
         cards.push({
@@ -103,8 +213,10 @@ export default function DashboardOverview() {
           label: config.label,
           value: data.current_value,
           invested: data.total_invested,
-          gain: data.unrealized_gains,
+          gain: data.total_gains,
           gainPercent: data.returns_percentage,
+          dayProfitLoss: data.one_day_profit_loss || 0,
+          dayProfitLossPercent: data.one_day_profit_loss_percentage || 0,
           icon: config.icon,
           color: config.color,
           bgColor: config.bgColor,
@@ -114,7 +226,7 @@ export default function DashboardOverview() {
     })
 
     return cards
-  }, [summaryV2])
+  }, [filteredBreakdown])
 
   return (
     <div className="space-y-6 px-4 md:px-0">
@@ -156,6 +268,8 @@ export default function DashboardOverview() {
         totalInvested={totalInvested}
         totalGain={totalGain}
         totalGainPercent={totalGainPercent}
+        dayProfitLoss={dayProfitLoss}
+        dayProfitLossPercent={dayProfitLossPercent}
         xirr={xirr}
         isLoading={isLoading && hasSelectedPortfolios}
       />
@@ -165,7 +279,7 @@ export default function DashboardOverview() {
         {/* Asset Allocation Chart - Takes 1 column */}
         <div className="lg:col-span-1">
           <AssetAllocationChart 
-            breakdown={summaryV2?.breakdown_by_asset_type}
+            breakdown={filteredBreakdown}
             isLoading={isLoading && hasSelectedPortfolios} 
           />
         </div>

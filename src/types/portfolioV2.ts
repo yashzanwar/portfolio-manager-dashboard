@@ -10,6 +10,8 @@ export interface OverviewV2 {
   total_profit_loss_percentage: number
   unrealized_profit_loss_percentage: number
   realized_profit_loss_percentage: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
 }
 
 export interface AssetTypeBreakdownV2 {
@@ -20,6 +22,8 @@ export interface AssetTypeBreakdownV2 {
   total_gains: number
   returns_percentage: number
   holding_count: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
 }
 
 // Single Portfolio Response
@@ -73,6 +77,8 @@ export interface PortfolioInfoV2 {
   realized_profit_loss_percentage: number
   unrealized_profit_loss_percentage: number
   total_profit_loss_percentage: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
 }
 
 // Holdings Data Container
@@ -80,6 +86,7 @@ export interface HoldingsDataV2 {
   mutual_funds?: MutualFundHoldingV2[]
   stocks?: StockHoldingV2[]
   metals?: MetalHoldingV2[]
+  fixed_deposits?: FixedDepositHoldingV2[]
 }
 
 // Mutual Fund Holding
@@ -103,6 +110,8 @@ export interface MutualFundHoldingV2 {
   current_units: number
   average_nav: number
   current_nav?: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
 }
 
 // Stock Holding
@@ -125,4 +134,32 @@ export interface StockHoldingV2 {
   average_price: number
   current_price?: number
   sector?: string
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
+}
+
+export interface FixedDepositHoldingV2 {
+  scheme_id: number
+  scheme_code: string
+  scheme_name: string
+  bank_name: string
+  interest_rate: number
+  maturity_date: string
+  compounding_frequency: string
+  interest_payout_type: string
+  folio_number: string
+  portfolio_id: number
+  portfolio_name: string
+  principal: number
+  total_invested: number
+  current_value: number
+  accrued_interest: number
+  realized_profit_loss: number
+  unrealized_profit_loss: number
+  total_profit_loss: number
+  realized_profit_loss_percentage: number
+  unrealized_profit_loss_percentage: number
+  total_profit_loss_percentage: number
+  one_day_profit_loss?: number
+  one_day_profit_loss_percentage?: number
 }

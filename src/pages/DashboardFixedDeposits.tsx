@@ -45,6 +45,16 @@ export default function DashboardFixedDeposits() {
           showBorderRight: true
         },
         {
+          header: '1D P&L',
+          key: 'one_day_profit_loss',
+          align: 'right',
+          format: (value) => (
+            <span className={`${(value || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatCurrency(value || 0)}
+            </span>
+          )
+        },
+        {
           header: 'Total P&L',
           key: 'totalProfitLoss',
           align: 'right',

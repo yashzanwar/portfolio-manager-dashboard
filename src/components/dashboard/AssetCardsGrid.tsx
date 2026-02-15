@@ -9,6 +9,8 @@ interface AssetCardData {
   invested: number
   gain: number
   gainPercent: number
+  dayProfitLoss: number
+  dayProfitLossPercent: number
   icon: React.ReactNode
   color: string
   bgColor: string
@@ -65,6 +67,19 @@ function AssetCard({ asset }: AssetCardProps) {
           </div>
         </div>
 
+        {/* 1D P&L */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs text-gray-500">1D P&L</div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${asset.dayProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {asset.dayProfitLoss >= 0 ? '+' : ''}{formatCurrency(asset.dayProfitLoss)}
+            </span>
+            <span className={`text-xs font-semibold ${asset.dayProfitLossPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {asset.dayProfitLossPercent >= 0 ? '+' : ''}{asset.dayProfitLossPercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+
         {/* Gain/Loss */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-900">
           <div className="flex items-center gap-1.5">
@@ -102,6 +117,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 3800000,
     gain: 700000,
     gainPercent: 18.42,
+    dayProfitLoss: 12500,
+    dayProfitLossPercent: 0.28,
     icon: <TrendingUp className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
@@ -114,6 +131,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 2200000,
     gain: 300000,
     gainPercent: 13.64,
+    dayProfitLoss: -8200,
+    dayProfitLossPercent: -0.33,
     icon: <Coins className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
@@ -126,6 +145,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 900000,
     gain: 100000,
     gainPercent: 11.11,
+    dayProfitLoss: 2200,
+    dayProfitLossPercent: 0.22,
     icon: <Bitcoin className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
@@ -138,6 +159,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 750000,
     gain: 50000,
     gainPercent: 6.67,
+    dayProfitLoss: 900,
+    dayProfitLossPercent: 0.11,
     icon: <Coins className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
@@ -150,6 +173,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 650000,
     gain: 50000,
     gainPercent: 7.69,
+    dayProfitLoss: 0,
+    dayProfitLossPercent: 0,
     icon: <Home className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',
@@ -162,6 +187,8 @@ const DEFAULT_ASSETS: AssetCardData[] = [
     invested: 480000,
     gain: 20000,
     gainPercent: 4.17,
+    dayProfitLoss: 140,
+    dayProfitLossPercent: 0.03,
     icon: <Landmark className="w-5 h-5" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-900',

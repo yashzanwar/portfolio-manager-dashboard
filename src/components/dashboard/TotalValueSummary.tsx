@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Percent, Target } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Target } from 'lucide-react'
 
 interface SummaryStat {
   label: string
@@ -15,6 +15,8 @@ interface TotalValueSummaryProps {
   totalInvested?: number
   totalGain?: number
   totalGainPercent?: number
+  dayProfitLoss?: number
+  dayProfitLossPercent?: number
   xirr?: number
   isLoading?: boolean
 }
@@ -24,6 +26,8 @@ export function TotalValueSummary({
   totalInvested = 0,
   totalGain = 0,
   totalGainPercent = 0,
+  dayProfitLoss = 0,
+  dayProfitLossPercent = 0,
   xirr,
   isLoading = false
 }: TotalValueSummaryProps) {
@@ -54,9 +58,17 @@ export function TotalValueSummary({
       iconColor: 'text-gray-400'
     },
     {
+      label: '1D P&L',
+      value: formatCurrency(dayProfitLoss),
+      change: formatPercentage(dayProfitLossPercent),
+      changeType: dayProfitLoss > 0 ? 'increase' : dayProfitLoss < 0 ? 'decrease' : 'neutral',
+      icon: dayProfitLoss >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />,
+      iconBg: 'bg-gray-900',
+      iconColor: dayProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+    },
+    {
       label: 'Total Gains/Loss',
-      value: formatCurrency(Math.abs(totalGain)),
-      change: totalGainPercent !== 0 ? `${totalGainPercent >= 0 ? '+' : ''}${totalGainPercent.toFixed(2)}%` : undefined,
+      value: formatCurrency(totalGain),
       changeType: totalGain > 0 ? 'increase' : totalGain < 0 ? 'decrease' : 'neutral',
       icon: totalGain >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />,
       iconBg: 'bg-gray-900',
@@ -123,28 +135,35 @@ export function TotalValueSummary({
             {formatCurrency(totalValue)}
           </div>
         </div>
-        
-        {/* Three Column Layout: Invested, P&L, XIRR */}
+
+        {/* 1D P&L - Single Line */}
+        <div className="bg-gray-950 px-4 pb-3 text-center">
+          <div className="text-sm font-semibold">
+            <span className="text-gray-400">1D P&L</span>{' '}
+            <span className={dayProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}>
+              {formatCurrency(Math.abs(dayProfitLoss))}
+            </span>
+          </div>
+        </div>
+
+        {/* Summary Grid: Invested, Total P&L, XIRR */}
         <div className="bg-gray-950 px-4 pb-5 grid grid-cols-3 gap-2">
           {/* Invested */}
-          <div>
+          <div className="text-left">
             <div className="text-xs text-gray-400 mb-1">Invested</div>
             <div className="text-sm font-bold text-white">
               {formatCurrency(totalInvested)}
             </div>
           </div>
-          
+
           {/* Total P&L */}
           <div className="text-center">
             <div className="text-xs text-gray-400 mb-1">Total P&L</div>
             <div className={`text-sm font-bold ${totalGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {formatCurrency(totalGain)}
             </div>
-            <div className={`text-xs ${totalGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ({formatPercentage(totalGainPercent)})
-            </div>
           </div>
-          
+
           {/* XIRR */}
           <div className="text-right">
             <div className="text-xs text-gray-400 mb-1">XIRR</div>
@@ -156,7 +175,7 @@ export function TotalValueSummary({
       </div>
 
       {/* Desktop Stats Cards */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}

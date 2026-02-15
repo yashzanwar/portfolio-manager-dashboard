@@ -12,13 +12,20 @@ import { PortfolioSummaryV2 } from '../types/portfolioV2'
 export function usePortfolioSummaryV2(
   portfolioIds?: number[], 
   assetType?: 'MUTUAL_FUND' | 'EQUITY_STOCK' | 'PRECIOUS_METAL' | 'FIXED_DEPOSIT',
-  includeHoldings?: boolean
+  includeHoldings?: boolean,
+  asOfDate?: string
 ) {
   const ids = portfolioIds || []
   
   return useQuery<PortfolioSummaryV2>({
-    queryKey: ['portfolioSummaryV2', ids.sort().join(','), assetType || 'all', includeHoldings ? 'with-holdings' : 'summary-only'],
-    queryFn: () => PortfolioAPI.getPortfolioSummaryV2(ids, assetType, includeHoldings),
+    queryKey: [
+      'portfolioSummaryV2',
+      ids.sort().join(','),
+      assetType || 'all',
+      includeHoldings ? 'with-holdings' : 'summary-only',
+      asOfDate || 'latest'
+    ],
+    queryFn: () => PortfolioAPI.getPortfolioSummaryV2(ids, assetType, includeHoldings, asOfDate),
     enabled: ids.length > 0,
     staleTime: 30000, // 30 seconds
     retry: 2,

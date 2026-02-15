@@ -45,6 +45,8 @@ interface AggregatedHolding {
   unrealizedProfitLoss: number
   totalProfitLoss: number
   totalProfitLossPercentage: number
+  dayProfitLoss: number
+  dayProfitLossPercentage: number
   holdings: any[]
   // Asset-specific fields will be added dynamically
   [key: string]: any
@@ -122,6 +124,7 @@ export default function DashboardHoldings({
         existing.realizedProfitLoss += holding.realized_profit_loss || 0
         existing.unrealizedProfitLoss += holding.unrealized_profit_loss || 0
         existing.totalProfitLoss += holding.total_profit_loss || 0
+        existing.dayProfitLoss += holding.one_day_profit_loss || 0
         existing.holdings.push(holding)
         
         // Recalculate weighted averages for numeric fields
@@ -141,6 +144,10 @@ export default function DashboardHoldings({
             if (col.key.includes('quantity') || col.key.includes('units') || col.key === 'current_units') {
               existing[col.key] = (existing[col.key] || 0) + (value || 0)
             }
+            // For 1D P&L, sum directly
+            else if (col.key === 'one_day_profit_loss') {
+              existing[col.key] = (existing[col.key] || 0) + (value || 0)
+            }
             // For average buy price/NAV, calculate weighted average using totalInvested
             else if (col.key === 'average_price' || col.key === 'average_nav') {
               const totalQuantity = existing.current_units || existing.current_quantity || existing.quantity || 1
@@ -158,6 +165,12 @@ export default function DashboardHoldings({
         if (existing.totalInvested > 0) {
           existing.totalProfitLossPercentage = (existing.totalProfitLoss / existing.totalInvested) * 100
         }
+        const previousValueTotal = existing.currentValue - existing.dayProfitLoss
+        if (previousValueTotal > 0) {
+          existing.dayProfitLossPercentage = (existing.dayProfitLoss / previousValueTotal) * 100
+        }
+        existing.one_day_profit_loss = existing.dayProfitLoss
+        existing.one_day_profit_loss_percentage = existing.dayProfitLossPercentage
       } else {
         const newHolding: AggregatedHolding = {
           identifier,
@@ -169,6 +182,8 @@ export default function DashboardHoldings({
           unrealizedProfitLoss: holding.unrealized_profit_loss || 0,
           totalProfitLoss: holding.total_profit_loss || 0,
           totalProfitLossPercentage: holding.total_profit_loss_percentage || 0,
+          dayProfitLoss: holding.one_day_profit_loss || 0,
+          dayProfitLossPercentage: holding.one_day_profit_loss_percentage || 0,
           holdings: [holding]
         }
         
@@ -398,6 +413,9 @@ export default function DashboardHoldings({
   const currentValue = overview?.current_value || 0
   const totalProfitLoss = overview?.total_profit_loss || 0
   const totalProfitLossPercentage = overview?.total_profit_loss_percentage || 0
+  const dayProfitLoss = overview?.one_day_profit_loss || 0
+  const dayProfitLossPercentage = overview?.one_day_profit_loss_percentage || 0
+  const dayProfitLossValue = formatCurrency(Math.abs(dayProfitLoss))
   const xirrValue = xirrData?.xirr || null
 
   return (
@@ -414,25 +432,32 @@ export default function DashboardHoldings({
             {formatCurrency(currentValue)}
           </div>
         </div>
-        
-        {/* Three Column Layout: Invested, P&L, XIRR */}
-        <div className="bg-gray-950 px-4 py-4 grid grid-cols-3 gap-2">
+
+        {/* 1D P&L - Single Line */}
+        <div className="bg-gray-950 px-4 pb-3 text-center">
+          <div className="text-sm font-semibold">
+            <span className="text-gray-400">1D P&L</span>{' '}
+            <span className={dayProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}>
+              {dayProfitLossValue}
+            </span>
+          </div>
+        </div>
+
+        {/* Summary Grid: Invested, Total P&L, XIRR */}
+        <div className="bg-gray-950 px-4 pb-4 grid grid-cols-3 gap-2">
           {/* Invested */}
-          <div>
+          <div className="text-left">
             <div className="text-xs text-gray-400 mb-1">Invested</div>
             <div className="text-sm font-bold text-white">
               {formatCurrency(totalInvested)}
             </div>
           </div>
-          
+
           {/* Total P&L */}
           <div className="text-center">
             <div className="text-xs text-gray-400 mb-1">Total P&L</div>
             <div className={`text-sm font-bold ${totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {formatCurrency(totalProfitLoss)}
-            </div>
-            <div className={`text-xs ${totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ({formatPercentage(totalProfitLossPercentage)})
             </div>
           </div>
           
@@ -446,14 +471,8 @@ export default function DashboardHoldings({
         </div>
       </div>
 
-      {/* Desktop Summary Statistics - 4 Cards */}
-      <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-gray-950 border-gray-900">
-          <div className="text-sm text-gray-400 mb-2">Total investment</div>
-          <div className="text-3xl font-bold text-white">
-            {formatCurrency(totalInvested)}
-          </div>
-        </Card>
+      {/* Desktop Summary Statistics - 5 Cards */}
+      <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="p-6 bg-gray-950 border-gray-900">
           <div className="text-sm text-gray-400 mb-2">Current value</div>
           <div className="text-3xl font-bold text-white">
@@ -461,14 +480,34 @@ export default function DashboardHoldings({
           </div>
         </Card>
         <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">Total investment</div>
+          <div className="text-3xl font-bold text-white">
+            {formatCurrency(totalInvested)}
+          </div>
+        </Card>
+        <Card className="p-6 bg-gray-950 border-gray-900">
+          <div className="text-sm text-gray-400 mb-2">1D P&L</div>
+          <div className="flex flex-col gap-2">
+            <div className={`text-3xl font-bold whitespace-nowrap leading-none ${
+              dayProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {dayProfitLossValue}
+            </div>
+            <span className={`inline-flex w-fit px-3 py-1 text-sm font-semibold rounded-full ${
+              dayProfitLoss >= 0
+                ? 'bg-green-900/40 text-green-400'
+                : 'bg-red-900/40 text-red-400'
+            }`}>
+              {formatPercentage(dayProfitLossPercentage)}
+            </span>
+          </div>
+        </Card>
+        <Card className="p-6 bg-gray-950 border-gray-900">
           <div className="text-sm text-gray-400 mb-2">Total P&L</div>
-          <div className={`text-3xl font-bold flex items-center gap-2 ${
+          <div className={`text-3xl font-bold ${
             totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'
           }`}>
             {formatCurrency(totalProfitLoss)}
-            <span className="text-lg">
-              {formatPercentage(totalProfitLossPercentage)}
-            </span>
           </div>
         </Card>
         <Card className="p-6 bg-gray-950 border-gray-900">

@@ -15,7 +15,8 @@ interface AssetFilterContextType {
 const AssetFilterContext = createContext<AssetFilterContextType | undefined>(undefined)
 
 const STORAGE_KEY = 'selected_asset_types'
-const ALL_ASSETS: AssetType[] = ['mutual-funds', 'stocks', 'crypto', 'metals', 'property', 'fixed-income']
+// Only include currently supported asset types
+const ALL_ASSETS: AssetType[] = ['mutual-funds', 'stocks', 'metals', 'fixed-income']
 
 export function AssetFilterProvider({ children }: { children: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams()
